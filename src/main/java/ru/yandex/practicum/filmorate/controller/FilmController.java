@@ -9,7 +9,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/films")
@@ -39,12 +41,10 @@ public class FilmController {
     public Film updateFilm(@RequestBody Film film) {
         try {
             validateFilm(film);
-            // Поиск фильма по ID
             Film existingFilm = films.stream()
                     .filter(f -> f.getId() == film.getId())
                     .findFirst()
                     .orElseThrow(() -> new ValidationException("Фильм с таким ID не найден."));
-            // Обновление данных фильма
             existingFilm.setName(film.getName());
             existingFilm.setDescription(film.getDescription());
             existingFilm.setReleaseDate(film.getReleaseDate());
@@ -56,6 +56,7 @@ public class FilmController {
             throw e;
         }
     }
+
 
 
     @GetMapping
@@ -82,9 +83,16 @@ public class FilmController {
         }
     }
 
+    // Обработчик исключений ValidationException
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<String> handleValidationException(ValidationException e) {
+    public ResponseEntity<Object> handleValidationException(ValidationException e) {
         log.error("Ошибка валидации: {}", e.getMessage());
-        return ResponseEntity.badRequest().body(e.getMessage()); // Возвращаем ошибку 400 с сообщением
+
+        // Создадим объект ошибки для ответа
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+
+        return ResponseEntity.badRequest().body(errorResponse); // Возвращаем ошибку 400 с JSON-ответом
     }
+
 }
