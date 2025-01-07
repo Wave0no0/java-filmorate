@@ -33,7 +33,6 @@ class FilmorateApplicationTests {
 				.andExpect(MockMvcResultMatchers.jsonPath("$.duration").value(148));
 	}
 
-
 	@Test
 	void testAddFilmWithInvalidName() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.post("/films")
@@ -59,5 +58,40 @@ class FilmorateApplicationTests {
 		mockMvc.perform(MockMvcRequestBuilders.get("/films"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.jsonPath("$").isArray());
+	}
+
+	// Новый тест: Обновление фильма с несуществующим ID
+	@Test
+	void testUpdateFilmWithInvalidId() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.put("/films/99999")  // Не существующий ID
+						.contentType("application/json")
+						.content("{\"name\": \"Updated Film\", \"description\": \"Updated description.\", " +
+								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
+				.andExpect(MockMvcResultMatchers.status().isNotFound())  // Ожидаем 404
+				.andExpect(MockMvcResultMatchers.content().string("Фильм с таким ID не найден."));
+	}
+
+	// Новый тест: Проверка, что ID фильма генерируется корректно
+	@Test
+	void testFilmIdGeneration() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.post("/films")
+						.contentType("application/json")
+						.content("{\"name\": \"The Dark Knight\", \"description\": \"A Batman film.\", " +
+								"\"releaseDate\": \"2008-07-18\", \"duration\": 152}"))
+				.andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(2))  // Проверка, что id не равен 0
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(2));  // Дополнительно проверяем, что id уникален
+	}
+
+	// Новый тест: Обновление фильма с корректным ID
+	@Test
+	void testUpdateFilmWithValidId() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.put("/films/1")  // Существующий ID
+						.contentType("application/json")
+						.content("{\"name\": \"Updated Film\", \"description\": \"Updated description.\", " +
+								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Updated Film"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Updated description."));
 	}
 }
