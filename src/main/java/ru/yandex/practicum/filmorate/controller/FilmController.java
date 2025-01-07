@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Импортируем для логирования
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -16,81 +16,72 @@ import java.util.Map;
 @RestController
 @RequestMapping("/films")
 @RequiredArgsConstructor
-@Slf4j // Аннотация для логирования
+@Slf4j
 public class FilmController {
     private final List<Film> films = new ArrayList<>();
 
     @PostMapping
-    public Film addFilm(@RequestBody Film film) {
+    public ResponseEntity<?> addFilm(@RequestBody Film film) {
         try {
             validateFilm(film);
-            // Присваиваем ID новому фильму
-            int newId = films.size() + 1; // Пример простого автоинкремента
+            int newId = films.size() + 1;
             film.setId(newId);
             films.add(film);
             log.info("Фильм успешно добавлен: {}", film);
-            return film;
+            return ResponseEntity.ok(film);
         } catch (ValidationException e) {
             log.error("Ошибка при добавлении фильма: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-
-    @PutMapping
-    public ResponseEntity<?> updateFilm(@RequestBody Film film) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateFilm(@PathVariable int id, @RequestBody Film film) {
         try {
             validateFilm(film);
             Film existingFilm = films.stream()
-                    .filter(f -> f.getId() == film.getId())
+                    .filter(f -> f.getId() == id)
                     .findFirst()
                     .orElseThrow(() -> new ValidationException("Фильм с таким ID не найден."));
+
             existingFilm.setName(film.getName());
             existingFilm.setDescription(film.getDescription());
             existingFilm.setReleaseDate(film.getReleaseDate());
             existingFilm.setDuration(film.getDuration());
             return ResponseEntity.ok(existingFilm);
         } catch (ValidationException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
+            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }
 
-
-
     @GetMapping
-    public List<Film> getAllFilms() {
-        return films;
+    public ResponseEntity<List<Film>> getAllFilms() {
+        return ResponseEntity.ok(films);
     }
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isEmpty()) {
-            log.error("Ошибка валидации: Название фильма не может быть пустым"); // Логируем ошибку валидации
+            log.error("Ошибка валидации: Название фильма не может быть пустым");
             throw new ValidationException("Название фильма не может быть пустым.");
         }
         if (film.getDescription() != null && film.getDescription().length() > 200) {
-            log.error("Ошибка валидации: Описание фильма не может превышать 200 символов"); // Логируем ошибку валидации
+            log.error("Ошибка валидации: Описание фильма не может превышать 200 символов");
             throw new ValidationException("Описание фильма не может превышать 200 символов.");
         }
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.error("Ошибка валидации: Дата релиза не может быть раньше 28 декабря 1895 года"); // Логируем ошибку валидации
+            log.error("Ошибка валидации: Дата релиза не может быть раньше 28 декабря 1895 года");
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года.");
         }
         if (film.getDuration() <= 0) {
-            log.error("Ошибка валидации: Продолжительность фильма должна быть положительным числом"); // Логируем ошибку валидации
+            log.error("Ошибка валидации: Продолжительность фильма должна быть положительным числом");
             throw new ValidationException("Продолжительность фильма должна быть положительным числом.");
         }
     }
 
-    // Обработчик исключений ValidationException
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<Object> handleValidationException(ValidationException e) {
         log.error("Ошибка валидации: {}", e.getMessage());
-
-        // Создадим объект ошибки для ответа
-        Map<String, String> errorResponse = new HashMap<>();
-        errorResponse.put("error", e.getMessage());
-
-        return ResponseEntity.badRequest().body(errorResponse); // Возвращаем ошибку 400 с JSON-ответом
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
-
 }
