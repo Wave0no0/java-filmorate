@@ -26,7 +26,7 @@ class FilmorateApplicationTests {
 						.content("{\"name\": \"Inception\", \"description\": \"A mind-bending thriller.\", " +
 								"\"releaseDate\": \"2010-07-16\", \"duration\": 148}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated())
-				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))  // Ожидаем, что id будет равен 1
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Inception"))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.description").value("A mind-bending thriller."))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.releaseDate").value("2010-07-16"))
@@ -40,7 +40,8 @@ class FilmorateApplicationTests {
 						.content("{\"name\": \"\", \"description\": \"Some description.\", " +
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
-				.andExpect(MockMvcResultMatchers.content().string("Название фильма не может быть пустым."));
+				.andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Название фильма не может быть пустым."));
 	}
 
 	@Test
@@ -50,7 +51,9 @@ class FilmorateApplicationTests {
 						.content("{\"name\": \"Film\", \"description\": \"Some description.\", " +
 								"\"releaseDate\": \"1800-01-01\", \"duration\": 90}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
-				.andExpect(MockMvcResultMatchers.content().string("Дата релиза не может быть раньше 28 декабря 1895 года."));
+				.andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.error")
+						.value("Дата релиза не может быть раньше 28 декабря 1895 года."));
 	}
 
 	@Test
@@ -60,7 +63,6 @@ class FilmorateApplicationTests {
 				.andExpect(MockMvcResultMatchers.jsonPath("$").isArray());
 	}
 
-	// Новый тест: Обновление фильма с несуществующим ID
 	@Test
 	void testUpdateFilmWithInvalidId() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.put("/films")
@@ -68,11 +70,11 @@ class FilmorateApplicationTests {
 						.content("{\"id\": 999, \"name\": \"Updated Film\", " +
 								"\"description\": \"Updated description.\", " +
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
-				.andExpect(MockMvcResultMatchers.status().isNotFound())  // Ожидаем 404
-				.andExpect(MockMvcResultMatchers.content().contentType("application/json"));
+				.andExpect(MockMvcResultMatchers.status().isNotFound())
+				.andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Фильм с таким ID не найден."));
 	}
 
-	// Новый тест: Проверка, что ID фильма генерируется корректно
 	@Test
 	void testFilmIdGeneration() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.post("/films")
@@ -80,16 +82,15 @@ class FilmorateApplicationTests {
 						.content("{\"name\": \"The Dark Knight\", \"description\": \"A Batman film.\", " +
 								"\"releaseDate\": \"2008-07-18\", \"duration\": 152}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated())
-				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(2))  // Проверка, что id не равен 0
-				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(2));  // Дополнительно проверяем, что id уникален
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(2));
 	}
 
-	// Новый тест: Обновление фильма с корректным ID
 	@Test
 	void testUpdateFilmWithValidId() throws Exception {
-		mockMvc.perform(MockMvcRequestBuilders.put("/films/1")  // Существующий ID
+		mockMvc.perform(MockMvcRequestBuilders.put("/films/1")
 						.contentType("application/json")
-						.content("{\"name\": \"Updated Film\", \"description\": \"Updated description.\", " +
+						.content("{\"id\": 1, \"name\": \"Updated Film\", " +
+								"\"description\": \"Updated description.\", " +
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Updated Film"))

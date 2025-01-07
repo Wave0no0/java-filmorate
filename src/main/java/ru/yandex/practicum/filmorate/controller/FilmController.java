@@ -86,10 +86,11 @@ public class FilmController {
     public ResponseEntity<Object> handleValidationException(ValidationException e) {
         log.error("Ошибка валидации: {}", e.getMessage());
 
-        // Создаем JSON-объект для ответа
+        // Создадим объект ошибки для ответа
         Map<String, String> errorResponse = new HashMap<>();
         errorResponse.put("error", e.getMessage());
 
-        return ResponseEntity.status(404).body(errorResponse);  // 404 для случаев, когда ресурс не найден
+        return ResponseEntity.badRequest().body(errorResponse); // Возвращаем ошибку 400 с JSON-ответом
     }
+
 }
