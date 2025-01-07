@@ -35,6 +35,25 @@ public class FilmController {
         }
     }
 
+    @PutMapping
+    public ResponseEntity<?> updateFilmWithoutId(@RequestBody Film film) {
+        try {
+            validateFilm(film);
+            Film existingFilm = films.stream()
+                    .filter(f -> f.getId() == film.getId())
+                    .findFirst()
+                    .orElseThrow(() -> new ValidationException("Фильм с таким ID не найден."));
+            existingFilm.setName(film.getName());
+            existingFilm.setDescription(film.getDescription());
+            existingFilm.setReleaseDate(film.getReleaseDate());
+            existingFilm.setDuration(film.getDuration());
+            return ResponseEntity.ok(existingFilm);
+        } catch (ValidationException e) {
+            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateFilm(@PathVariable int id, @RequestBody Film film) {
         try {
@@ -49,6 +68,7 @@ public class FilmController {
             existingFilm.setDuration(film.getDuration());
             return ResponseEntity.ok(existingFilm);
         } catch (ValidationException e) {
+            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }
