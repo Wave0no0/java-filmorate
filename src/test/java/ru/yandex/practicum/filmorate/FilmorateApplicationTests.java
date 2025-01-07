@@ -26,11 +26,13 @@ class FilmorateApplicationTests {
 						.content("{\"name\": \"Inception\", \"description\": \"A mind-bending thriller.\", " +
 								"\"releaseDate\": \"2010-07-16\", \"duration\": 148}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))  // Ожидаем, что id будет равен 1
 				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Inception"))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.description").value("A mind-bending thriller."))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.releaseDate").value("2010-07-16"))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.duration").value(148));
 	}
+
 
 	@Test
 	void testAddFilmWithInvalidName() throws Exception {

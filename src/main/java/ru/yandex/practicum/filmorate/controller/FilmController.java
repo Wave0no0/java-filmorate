@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Импортируем для логирования
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -21,27 +22,41 @@ public class FilmController {
     public Film addFilm(@RequestBody Film film) {
         try {
             validateFilm(film);
+            // Присваиваем ID новому фильму
+            int newId = films.size() + 1; // Пример простого автоинкремента
+            film.setId(newId);
             films.add(film);
-            log.info("Фильм успешно добавлен: {}", film); // Логируем успешное добавление
+            log.info("Фильм успешно добавлен: {}", film);
             return film;
         } catch (ValidationException e) {
-            log.error("Ошибка при добавлении фильма: {}", e.getMessage()); // Логируем ошибку валидации
+            log.error("Ошибка при добавлении фильма: {}", e.getMessage());
             throw e;
         }
     }
+
 
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
         try {
             validateFilm(film);
-            films.set(film.getId(), film); // Пример: замена по индексу id
-            log.info("Фильм успешно обновлен: {}", film); // Логируем успешное обновление
-            return film;
+            // Поиск фильма по ID
+            Film existingFilm = films.stream()
+                    .filter(f -> f.getId() == film.getId())
+                    .findFirst()
+                    .orElseThrow(() -> new ValidationException("Фильм с таким ID не найден."));
+            // Обновление данных фильма
+            existingFilm.setName(film.getName());
+            existingFilm.setDescription(film.getDescription());
+            existingFilm.setReleaseDate(film.getReleaseDate());
+            existingFilm.setDuration(film.getDuration());
+            log.info("Фильм успешно обновлен: {}", film);
+            return existingFilm;
         } catch (ValidationException e) {
-            log.error("Ошибка при обновлении фильма: {}", e.getMessage()); // Логируем ошибку валидации
+            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
             throw e;
         }
     }
+
 
     @GetMapping
     public List<Film> getAllFilms() {
@@ -65,5 +80,11 @@ public class FilmController {
             log.error("Ошибка валидации: Продолжительность фильма должна быть положительным числом"); // Логируем ошибку валидации
             throw new ValidationException("Продолжительность фильма должна быть положительным числом.");
         }
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleValidationException(ValidationException e) {
+        log.error("Ошибка валидации: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(e.getMessage()); // Возвращаем ошибку 400 с сообщением
     }
 }
