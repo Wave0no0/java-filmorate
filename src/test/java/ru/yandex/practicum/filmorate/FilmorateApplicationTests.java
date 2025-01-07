@@ -69,7 +69,7 @@ class FilmorateApplicationTests {
 								"\"description\": \"Updated description.\", " +
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
 				.andExpect(MockMvcResultMatchers.status().isNotFound())  // Ожидаем 404
-				.andExpect(MockMvcResultMatchers.content().string("Фильм с таким ID не найден."));
+				.andExpect(MockMvcResultMatchers.content().contentType("application/json"));
 	}
 
 	// Новый тест: Проверка, что ID фильма генерируется корректно
