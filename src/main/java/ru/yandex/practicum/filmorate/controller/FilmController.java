@@ -43,14 +43,12 @@ public class FilmController {
                     .filter(f -> f.getId() == id)
                     .findFirst()
                     .orElseThrow(() -> new ValidationException("Фильм с таким ID не найден."));
-
             existingFilm.setName(film.getName());
             existingFilm.setDescription(film.getDescription());
             existingFilm.setReleaseDate(film.getReleaseDate());
             existingFilm.setDuration(film.getDuration());
             return ResponseEntity.ok(existingFilm);
         } catch (ValidationException e) {
-            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }

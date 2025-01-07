@@ -72,7 +72,7 @@ class FilmorateApplicationTests {
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
 				.andExpect(MockMvcResultMatchers.status().isNotFound())
 				.andExpect(MockMvcResultMatchers.content().contentType("application/json"))
-				.andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Film id was not found"));
+				.andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Фильм с таким ID не найден."));
 	}
 
 	@Test
