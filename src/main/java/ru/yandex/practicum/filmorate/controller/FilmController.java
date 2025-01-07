@@ -38,7 +38,7 @@ public class FilmController {
 
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film film) {
+    public ResponseEntity<?> updateFilm(@RequestBody Film film) {
         try {
             validateFilm(film);
             Film existingFilm = films.stream()
@@ -49,11 +49,9 @@ public class FilmController {
             existingFilm.setDescription(film.getDescription());
             existingFilm.setReleaseDate(film.getReleaseDate());
             existingFilm.setDuration(film.getDuration());
-            log.info("Фильм успешно обновлен: {}", film);
-            return existingFilm;
+            return ResponseEntity.ok(existingFilm);
         } catch (ValidationException e) {
-            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.status(404).body(e.getMessage());
         }
     }
 

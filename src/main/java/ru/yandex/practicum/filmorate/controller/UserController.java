@@ -18,6 +18,7 @@ public class UserController {
     @PostMapping
     public User addUser(@RequestBody User user) {
         validateUser(user);
+        user.setId(users.size() + 1);  // Присваиваем новый ID
         users.add(user);
         return user;
     }
@@ -25,7 +26,11 @@ public class UserController {
     @PutMapping
     public User updateUser(@RequestBody User user) {
         validateUser(user);
-        users.set(user.getId(), user); // Пример: замена по индексу id
+        User existingUser = users.stream()
+                .filter(u -> u.getId() == user.getId())
+                .findFirst()
+                .orElseThrow(() -> new ValidationException("Пользователь с таким ID не найден."));
+        users.set(user.getId() - 1, user);  // Исправляем ID, чтобы он корректно обновлял пользователя
         return user;
     }
 

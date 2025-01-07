@@ -63,9 +63,10 @@ class FilmorateApplicationTests {
 	// Новый тест: Обновление фильма с несуществующим ID
 	@Test
 	void testUpdateFilmWithInvalidId() throws Exception {
-		mockMvc.perform(MockMvcRequestBuilders.put("/films/99999")  // Не существующий ID
+		mockMvc.perform(MockMvcRequestBuilders.put("/films")
 						.contentType("application/json")
-						.content("{\"name\": \"Updated Film\", \"description\": \"Updated description.\", " +
+						.content("{\"id\": 999, \"name\": \"Updated Film\", " +
+								"\"description\": \"Updated description.\", " +
 								"\"releaseDate\": \"2025-01-01\", \"duration\": 120}"))
 				.andExpect(MockMvcResultMatchers.status().isNotFound())  // Ожидаем 404
 				.andExpect(MockMvcResultMatchers.content().string("Фильм с таким ID не найден."));
