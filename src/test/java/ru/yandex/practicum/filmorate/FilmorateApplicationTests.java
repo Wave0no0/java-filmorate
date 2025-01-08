@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class UserControllerTests {
+class FilmorateApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -61,14 +61,12 @@ class UserControllerTests {
 
 	@Test
 	void testUpdateUserWithValidId() throws Exception {
-		// Сначала добавляем пользователя
 		mockMvc.perform(MockMvcRequestBuilders.post("/users")
 						.contentType("application/json")
 						.content("{\"email\": \"user@example.com\", \"login\": \"userlogin\", " +
 								"\"name\": \"User Name\", \"birthday\": \"1990-01-01\"}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated());
 
-		// Затем обновляем его данные
 		mockMvc.perform(MockMvcRequestBuilders.put("/users/1")
 						.contentType("application/json")
 						.content("{\"email\": \"updated@example.com\", \"login\": \"updatedlogin\", " +
@@ -92,7 +90,6 @@ class UserControllerTests {
 
 	@Test
 	void testGetAllUsers() throws Exception {
-		// Добавляем нескольких пользователей
 		mockMvc.perform(MockMvcRequestBuilders.post("/users")
 						.contentType("application/json")
 						.content("{\"email\": \"user1@example.com\", \"login\": \"userlogin1\", " +
@@ -105,7 +102,6 @@ class UserControllerTests {
 								"\"name\": \"User Name 2\", \"birthday\": \"1990-01-01\"}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated());
 
-		// Проверяем, что список пользователей возвращается корректно
 		mockMvc.perform(MockMvcRequestBuilders.get("/users"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
