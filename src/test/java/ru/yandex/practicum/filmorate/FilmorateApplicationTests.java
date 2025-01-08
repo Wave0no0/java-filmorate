@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class FilmorateApplicationTests {
+class FilmorateApplicationTest {
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -72,6 +72,7 @@ class FilmorateApplicationTests {
 						.content("{\"email\": \"updated@example.com\", \"login\": \"updatedlogin\", " +
 								"\"name\": \"Updated Name\", \"birthday\": \"1995-05-15\"}"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.email").value("updated@example.com"))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.login").value("updatedlogin"))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Updated Name"))
