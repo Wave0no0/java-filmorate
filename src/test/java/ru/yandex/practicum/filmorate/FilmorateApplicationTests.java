@@ -61,12 +61,14 @@ class FilmorateApplicationTests {
 
 	@Test
 	void testUpdateUserWithValidId() throws Exception {
+		// Создаём пользователя перед обновлением
 		mockMvc.perform(MockMvcRequestBuilders.post("/users")
 						.contentType("application/json")
 						.content("{\"email\": \"user@example.com\", \"login\": \"userlogin\", " +
 								"\"name\": \"User Name\", \"birthday\": \"1990-01-01\"}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated());
 
+		// Обновляем существующего пользователя
 		mockMvc.perform(MockMvcRequestBuilders.put("/users/1")
 						.contentType("application/json")
 						.content("{\"email\": \"updated@example.com\", \"login\": \"updatedlogin\", " +
@@ -91,6 +93,7 @@ class FilmorateApplicationTests {
 
 	@Test
 	void testGetAllUsers() throws Exception {
+		// Создаём пользователей перед GET-запросом
 		mockMvc.perform(MockMvcRequestBuilders.post("/users")
 						.contentType("application/json")
 						.content("{\"email\": \"user1@example.com\", \"login\": \"userlogin1\", " +
@@ -103,6 +106,7 @@ class FilmorateApplicationTests {
 								"\"name\": \"User Name 2\", \"birthday\": \"1990-01-01\"}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated());
 
+		// Проверяем, что пользователи добавлены и получаем их список
 		mockMvc.perform(MockMvcRequestBuilders.get("/users"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
