@@ -28,12 +28,13 @@ public class FilmController {
             film.setId(newId);
             films.add(film);
             log.info("Фильм успешно добавлен: {}", film);
-            return ResponseEntity.ok(film);
+            return ResponseEntity.status(201).body(film);
         } catch (ValidationException e) {
             log.error("Ошибка при добавлении фильма: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
 
     @PutMapping
     public ResponseEntity<?> updateFilmWithoutId(@RequestBody Film film) {
