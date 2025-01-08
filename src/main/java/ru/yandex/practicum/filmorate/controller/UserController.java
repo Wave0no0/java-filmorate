@@ -53,6 +53,15 @@ public class UserController {
         }
     }
 
+    // Новый метод обновления без ID в URL
+    @PutMapping
+    public ResponseEntity<?> updateUserWithoutId(@RequestBody User user) {
+        if (user.getId() <= 0) {
+            throw new ValidationException("ID пользователя должен быть положительным.");
+        }
+        return updateUser(user.getId(), user);
+    }
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей.");

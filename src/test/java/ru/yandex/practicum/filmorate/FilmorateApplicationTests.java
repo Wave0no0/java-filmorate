@@ -61,14 +61,14 @@ class FilmorateApplicationTests {
 
 	@Test
 	void testUpdateUserWithValidId() throws Exception {
-		// Создаём пользователя перед обновлением
+		// Сначала создаём пользователя
 		mockMvc.perform(MockMvcRequestBuilders.post("/users")
 						.contentType("application/json")
 						.content("{\"email\": \"user@example.com\", \"login\": \"userlogin\", " +
 								"\"name\": \"User Name\", \"birthday\": \"1990-01-01\"}"))
 				.andExpect(MockMvcResultMatchers.status().isCreated());
 
-		// Обновляем существующего пользователя
+		// Обновляем пользователя по его ID (пусть это ID = 1)
 		mockMvc.perform(MockMvcRequestBuilders.put("/users/1")
 						.contentType("application/json")
 						.content("{\"email\": \"updated@example.com\", \"login\": \"updatedlogin\", " +
@@ -83,6 +83,7 @@ class FilmorateApplicationTests {
 
 	@Test
 	void testUpdateUserWithInvalidId() throws Exception {
+		// Попытка обновления пользователя с несуществующим ID (например, 999)
 		mockMvc.perform(MockMvcRequestBuilders.put("/users/999")
 						.contentType("application/json")
 						.content("{\"email\": \"updated@example.com\", \"login\": \"updatedlogin\", " +
@@ -90,6 +91,7 @@ class FilmorateApplicationTests {
 				.andExpect(MockMvcResultMatchers.status().isNotFound())
 				.andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Пользователь с таким ID не найден."));
 	}
+
 
 	@Test
 	void testGetAllUsers() throws Exception {
