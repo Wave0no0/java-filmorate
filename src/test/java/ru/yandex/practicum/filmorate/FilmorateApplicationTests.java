@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class FilmorateApplicationTest {
+class FilmorateApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
