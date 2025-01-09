@@ -19,10 +19,10 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        validateUser(user);
         if (!users.containsKey(user.getId())) {
             throw new NotFoundException("User not found with id: " + user.getId());
         }
-        validateUser(user);
         users.put(user.getId(), user);
         return user;
     }
@@ -39,7 +39,6 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
-
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
     }
@@ -47,7 +46,6 @@ public class UserService {
     public void removeFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
-
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
     }
@@ -56,7 +54,7 @@ public class UserService {
         User user = getUserById(userId);
         List<User> friends = new ArrayList<>();
         for (Integer friendId : user.getFriends()) {
-            friends.add(getUserById(friendId));
+            friends.add(getUserById(friendId)); // Преобразование id в объекты User
         }
         return friends;
     }

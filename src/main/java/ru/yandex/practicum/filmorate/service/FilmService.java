@@ -19,10 +19,11 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
-        if (!films.containsKey(film.getId())) {
+        validateFilm(film);
+        Film existingFilm = films.get(film.getId());
+        if (existingFilm == null) {
             throw new NotFoundException("Film not found with id: " + film.getId());
         }
-        validateFilm(film);
         films.put(film.getId(), film);
         return film;
     }
@@ -43,6 +44,9 @@ public class FilmService {
 
     public void removeLike(int filmId, int userId) {
         Film film = getFilmById(filmId);
+        if (!film.getLikes().contains(userId)) {
+            throw new NotFoundException("Like from user " + userId + " not found for film " + filmId);
+        }
         film.getLikes().remove(userId);
     }
 
