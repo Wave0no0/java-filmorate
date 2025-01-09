@@ -26,14 +26,12 @@ public class FilmController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateFilm(@PathVariable int id, @Valid @RequestBody Film film) {
+        film.setId(id);
         try {
-            film.setId(id);
             Film updatedFilm = filmService.updateFilm(film);
             return ResponseEntity.ok(updatedFilm);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
         }
     }
 

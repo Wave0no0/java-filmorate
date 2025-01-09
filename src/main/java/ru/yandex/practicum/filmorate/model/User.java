@@ -27,4 +27,9 @@ public class User {
     private LocalDate birthday;
 
     private final Set<Integer> friends = new HashSet<>();
+
+    // Автоматическое заполнение имени, если пусто
+    public String getName() {
+        return (name == null || name.isBlank()) ? login : name;
+    }
 }

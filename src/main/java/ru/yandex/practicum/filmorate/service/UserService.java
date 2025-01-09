@@ -28,10 +28,8 @@ public class UserService {
     }
 
     public User getUserById(int id) {
-        if (!users.containsKey(id)) {
-            throw new NotFoundException("User not found with id: " + id);
-        }
-        return users.get(id);
+        return Optional.ofNullable(users.get(id))
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
     }
 
     public List<User> getAllUsers() {
@@ -79,13 +77,13 @@ public class UserService {
 
     private void validateUser(User user) {
         if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Invalid email: " + user.getEmail());
+            throw new IllegalArgumentException("Некорректный формат email: " + user.getEmail());
         }
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            throw new IllegalArgumentException("Login cannot be empty");
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+            throw new IllegalArgumentException("Логин не должен быть пустым или содержать пробелы");
         }
         if (user.getBirthday() == null || user.getBirthday().isAfter(java.time.LocalDate.now())) {
-            throw new IllegalArgumentException("Invalid birthday");
+            throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
     }
 }

@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.exception;
 
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.springframework.http.HttpStatus;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -33,13 +31,13 @@ public class GlobalExceptionHandler {
         return ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        DefaultMessageSourceResolvable::getDefaultMessage
+                        FieldError::getDefaultMessage
                 ));
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleGenericException(Exception e) {
-        return Map.of("error", "Произошла внутренняя ошибка");
+        return Map.of("error", "Произошла внутренняя ошибка: " + e.getMessage());
     }
 }
