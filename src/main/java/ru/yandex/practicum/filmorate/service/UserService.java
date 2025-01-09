@@ -19,17 +19,19 @@ public class UserService {
     }
 
     public User updateUser(User user) {
-        validateUser(user);
         if (!users.containsKey(user.getId())) {
             throw new NotFoundException("User not found with id: " + user.getId());
         }
+        validateUser(user);
         users.put(user.getId(), user);
         return user;
     }
 
     public User getUserById(int id) {
-        return Optional.ofNullable(users.get(id))
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+        if (!users.containsKey(id)) {
+            throw new NotFoundException("User not found with id: " + id);
+        }
+        return users.get(id);
     }
 
     public List<User> getAllUsers() {
@@ -39,6 +41,7 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
     }
@@ -46,33 +49,43 @@ public class UserService {
     public void removeFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
     }
 
-    public List<Integer> getUserFriends(int userId) {
-        return new ArrayList<>(getUserById(userId).getFriends());
+    public List<User> getUserFriends(int userId) {
+        User user = getUserById(userId);
+        List<User> friends = new ArrayList<>();
+        for (Integer friendId : user.getFriends()) {
+            friends.add(getUserById(friendId));
+        }
+        return friends;
     }
 
-    public List<Integer> getCommonFriends(int userId, int otherId) {
+    public List<User> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
         User other = getUserById(otherId);
 
-        Set<Integer> commonFriends = new HashSet<>(user.getFriends());
-        commonFriends.retainAll(other.getFriends());
+        Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
+        commonFriendIds.retainAll(other.getFriends());
 
-        return new ArrayList<>(commonFriends);
+        List<User> commonFriends = new ArrayList<>();
+        for (Integer friendId : commonFriendIds) {
+            commonFriends.add(getUserById(friendId));
+        }
+        return commonFriends;
     }
 
     private void validateUser(User user) {
         if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Некорректный формат email: " + user.getEmail());
+            throw new IllegalArgumentException("Invalid email: " + user.getEmail());
         }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new IllegalArgumentException("Логин не должен быть пустым или содержать пробелы");
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
+            throw new IllegalArgumentException("Login cannot be empty");
         }
         if (user.getBirthday() == null || user.getBirthday().isAfter(java.time.LocalDate.now())) {
-            throw new IllegalArgumentException("Дата рождения не может быть в будущем");
+            throw new IllegalArgumentException("Invalid birthday");
         }
     }
 }
