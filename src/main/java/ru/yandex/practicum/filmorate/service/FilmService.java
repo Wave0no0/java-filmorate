@@ -20,7 +20,6 @@ public class FilmService {
         this.filmStorage = filmStorage;
     }
 
-    // Film methods
     public Film addFilm(Film film) {
         log.info("Adding new film: {}", film);
         return filmStorage.addFilm(film);
@@ -49,7 +48,6 @@ public class FilmService {
         return filmStorage.getAllFilms();
     }
 
-    // Additional methods (if needed)
     public void addLike(int filmId, int userId) {
         log.info("Adding like from user: {} to film: {}", userId, filmId);
         Film film = getFilmById(filmId);
