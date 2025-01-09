@@ -14,7 +14,7 @@ public class User {
     private int id;
 
     @Email(message = "Некорректный формат email")
-    @NotNull(message = "Email не может быть пустым")
+    @NotBlank(message = "Email не может быть пустым")
     private String email;
 
     @NotBlank(message = "Логин не может быть пустым")

@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -18,20 +19,21 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> addUser(@Valid @RequestBody User user) {
-        return ResponseEntity.status(201).body(userService.addUser(user));
+    public ResponseEntity<?> addUser(@Valid @RequestBody User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.addUser(user));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable int id, @Valid @RequestBody User user) {
+    public ResponseEntity<?> updateUser(@PathVariable int id, @Valid @RequestBody User user) {
         user.setId(id);
         return ResponseEntity.ok(userService.updateUser(user));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable int id) {
+    public ResponseEntity<?> getUserById(@PathVariable int id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
+
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
