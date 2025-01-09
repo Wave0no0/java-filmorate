@@ -13,6 +13,7 @@ public class FilmService {
     private int nextId = 1;
 
     public Film createFilm(Film film) {
+        validateFilm(film);
         film.setId(nextId++);
         films.put(film.getId(), film);
         likes.put(film.getId(), new HashSet<>());
@@ -23,6 +24,7 @@ public class FilmService {
         if (!films.containsKey(film.getId())) {
             throw new NotFoundException("Film not found with id: " + film.getId());
         }
+        validateFilm(film);
         films.put(film.getId(), film);
         return film;
     }
@@ -39,12 +41,16 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
+        if (!films.containsKey(filmId)) {
+            throw new NotFoundException("Film not found with id: " + filmId);
+        }
         likes.get(filmId).add(userId);
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
+        if (!films.containsKey(filmId)) {
+            throw new NotFoundException("Film not found with id: " + filmId);
+        }
         likes.get(filmId).remove(userId);
     }
 
@@ -53,5 +59,20 @@ public class FilmService {
                 .sorted((f1, f2) -> likes.get(f2.getId()).size() - likes.get(f1.getId()).size())
                 .limit(count)
                 .toList();
+    }
+
+    private void validateFilm(Film film) {
+        if (film.getName() == null || film.getName().isBlank()) {
+            throw new IllegalArgumentException("Film name cannot be empty");
+        }
+        if (film.getDescription() == null || film.getDescription().length() > 200) {
+            throw new IllegalArgumentException("Film description is too long");
+        }
+        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(java.time.LocalDate.of(1895, 12, 28))) {
+            throw new IllegalArgumentException("Invalid release date");
+        }
+        if (film.getDuration() <= 0) {
+            throw new IllegalArgumentException("Film duration must be positive");
+        }
     }
 }

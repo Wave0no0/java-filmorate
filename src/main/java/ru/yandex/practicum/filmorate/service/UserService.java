@@ -12,6 +12,7 @@ public class UserService {
     private int nextId = 1;
 
     public User createUser(User user) {
+        validateUser(user);
         user.setId(nextId++);
         users.put(user.getId(), user);
         return user;
@@ -21,6 +22,7 @@ public class UserService {
         if (!users.containsKey(user.getId())) {
             throw new NotFoundException("User not found with id: " + user.getId());
         }
+        validateUser(user);
         users.put(user.getId(), user);
         return user;
     }
@@ -73,5 +75,17 @@ public class UserService {
             commonFriends.add(getUserById(friendId));
         }
         return commonFriends;
+    }
+
+    private void validateUser(User user) {
+        if (user.getEmail() == null || !user.getEmail().contains("@")) {
+            throw new IllegalArgumentException("Invalid email: " + user.getEmail());
+        }
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
+            throw new IllegalArgumentException("Login cannot be empty");
+        }
+        if (user.getBirthday() == null || user.getBirthday().isAfter(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("Invalid birthday");
+        }
     }
 }
