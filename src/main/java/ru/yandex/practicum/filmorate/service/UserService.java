@@ -1,88 +1,77 @@
 package ru.yandex.practicum.filmorate.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 public class UserService {
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+    private final Map<Integer, User> users = new HashMap<>();
+    private int nextId = 1;
 
-    private final UserStorage userStorage;
-
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
-
-    public User addUser(User user) {
-        log.info("Adding new user: {}", user);
-        return userStorage.addUser(user);
+    public User createUser(User user) {
+        user.setId(nextId++);
+        users.put(user.getId(), user);
+        return user;
     }
 
     public User updateUser(User user) {
-        log.info("Updating user: {}", user);
-        if (!userStorage.getUserById(user.getId()).isPresent()) {
-            log.error("User with ID {} not found", user.getId());
-            throw new NotFoundException("User with ID " + user.getId() + " not found");
+        if (!users.containsKey(user.getId())) {
+            throw new NotFoundException("User not found with id: " + user.getId());
         }
-        return userStorage.updateUser(user);
+        users.put(user.getId(), user);
+        return user;
     }
 
     public User getUserById(int id) {
-        log.info("Retrieving user with ID: {}", id);
-        return userStorage.getUserById(id)
-                .orElseThrow(() -> new NotFoundException("User with ID " + id + " not found"));
+        if (!users.containsKey(id)) {
+            throw new NotFoundException("User not found with id: " + id);
+        }
+        return users.get(id);
     }
 
     public List<User> getAllUsers() {
-        log.info("Retrieving all users");
-        return userStorage.getAllUsers();
+        return new ArrayList<>(users.values());
     }
 
     public void addFriend(int userId, int friendId) {
-        log.info("Adding friend: {} to user: {}", friendId, userId);
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
     }
 
     public void removeFriend(int userId, int friendId) {
-        log.info("Removing friend: {} from user: {}", friendId, userId);
         User user = getUserById(userId);
         User friend = getUserById(friendId);
-        if (!user.getFriends().contains(friendId)) {
-            throw new ValidationException("User " + friendId + " is not a friend of user " + userId);
-        }
+
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
     }
 
     public List<User> getUserFriends(int userId) {
-        log.info("Retrieving friends for user: {}", userId);
         User user = getUserById(userId);
-        return user.getFriends().stream()
-                .map(this::getUserById)
-                .toList();
+        List<User> friends = new ArrayList<>();
+        for (Integer friendId : user.getFriends()) {
+            friends.add(getUserById(friendId));
+        }
+        return friends;
     }
 
-    public List<User> getCommonFriends(int userId, int otherUserId) {
-        log.info("Retrieving common friends for users: {} and {}", userId, otherUserId);
+    public List<User> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
-        User otherUser = getUserById(otherUserId);
-        return user.getFriends().stream()
-                .filter(otherUser.getFriends()::contains)
-                .map(this::getUserById)
-                .toList();
+        User other = getUserById(otherId);
+
+        Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
+        commonFriendIds.retainAll(other.getFriends());
+
+        List<User> commonFriends = new ArrayList<>();
+        for (Integer friendId : commonFriendIds) {
+            commonFriends.add(getUserById(friendId));
+        }
+        return commonFriends;
     }
 }

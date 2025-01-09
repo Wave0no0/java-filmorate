@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -16,13 +15,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/films")
 @RequiredArgsConstructor
-@Validated
 public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
-    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
-        Film createdFilm = filmService.addFilm(film);
+    public ResponseEntity<Film> createFilm(@Valid @RequestBody Film film) {
+        Film createdFilm = filmService.createFilm(film);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdFilm);
     }
 
@@ -34,15 +32,14 @@ public class FilmController {
             return ResponseEntity.ok(updatedFilm);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getFilmById(@PathVariable int id) {
         try {
-            return ResponseEntity.ok(filmService.getFilmById(id));
+            Film film = filmService.getFilmById(id);
+            return ResponseEntity.ok(film);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
@@ -74,7 +71,7 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public ResponseEntity<?> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
+    public ResponseEntity<List<Film>> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
         return ResponseEntity.ok(filmService.getPopularFilms(count));
     }
 }
