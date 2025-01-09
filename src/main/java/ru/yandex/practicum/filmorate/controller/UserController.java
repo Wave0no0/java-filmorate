@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,7 +35,7 @@ public class UserController {
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
         }
     }
 
@@ -68,24 +68,6 @@ public class UserController {
         try {
             userService.removeFriend(id, friendId);
             return ResponseEntity.ok(Map.of("message", "Friend removed successfully"));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/{id}/friends")
-    public ResponseEntity<?> getFriends(@PathVariable int id) {
-        try {
-            return ResponseEntity.ok(userService.getUserFriends(id));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/{id}/friends/common/{otherId}")
-    public ResponseEntity<?> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
-        try {
-            return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
