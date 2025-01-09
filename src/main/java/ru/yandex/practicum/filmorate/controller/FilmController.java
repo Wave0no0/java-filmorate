@@ -52,4 +52,29 @@ public class FilmController {
     public ResponseEntity<List<Film>> getAllFilms() {
         return ResponseEntity.ok(filmService.getAllFilms());
     }
+
+    @PutMapping("/{id}/like/{userId}")
+    public ResponseEntity<?> addLike(@PathVariable int id, @PathVariable int userId) {
+        try {
+            filmService.addLike(id, userId);
+            return ResponseEntity.ok(Map.of("message", "Like added successfully"));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public ResponseEntity<?> removeLike(@PathVariable int id, @PathVariable int userId) {
+        try {
+            filmService.removeLike(id, userId);
+            return ResponseEntity.ok(Map.of("message", "Like removed successfully"));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<?> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
+        return ResponseEntity.ok(filmService.getPopularFilms(count));
+    }
 }
