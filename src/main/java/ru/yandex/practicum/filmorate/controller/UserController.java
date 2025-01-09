@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -33,9 +33,12 @@ public class UserController {
     public ResponseEntity<?> updateUser(@PathVariable int id, @Valid @RequestBody User user) {
         try {
             user.setId(id);
-            return ResponseEntity.ok(userService.updateUser(user));
+            User updatedUser = userService.updateUser(user);
+            return ResponseEntity.ok(updatedUser);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
 
