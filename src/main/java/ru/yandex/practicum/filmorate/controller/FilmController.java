@@ -32,14 +32,15 @@ public class FilmController {
             return ResponseEntity.ok(updatedFilm);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getFilmById(@PathVariable int id) {
         try {
-            Film film = filmService.getFilmById(id);
-            return ResponseEntity.ok(film);
+            return ResponseEntity.ok(filmService.getFilmById(id));
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }

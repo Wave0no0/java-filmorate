@@ -32,14 +32,15 @@ public class UserController {
             return ResponseEntity.ok(updatedUser);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable int id) {
         try {
-            User user = userService.getUserById(id);
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(userService.getUserById(id));
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
@@ -73,8 +74,16 @@ public class UserController {
     @GetMapping("/{id}/friends")
     public ResponseEntity<?> getFriends(@PathVariable int id) {
         try {
-            List<User> friends = userService.getUserFriends(id);
-            return ResponseEntity.ok(friends);
+            return ResponseEntity.ok(userService.getUserFriends(id));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public ResponseEntity<?> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+        try {
+            return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
