@@ -50,27 +50,18 @@ public class UserService {
         friend.getFriends().remove(userId);
     }
 
-    public List<User> getUserFriends(int userId) {
-        User user = getUserById(userId);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends()) {
-            friends.add(getUserById(friendId)); // Преобразование id в объекты User
-        }
-        return friends;
+    public List<Integer> getUserFriends(int userId) {
+        return new ArrayList<>(getUserById(userId).getFriends());
     }
 
-    public List<User> getCommonFriends(int userId, int otherId) {
+    public List<Integer> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
         User other = getUserById(otherId);
 
-        Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
-        commonFriendIds.retainAll(other.getFriends());
+        Set<Integer> commonFriends = new HashSet<>(user.getFriends());
+        commonFriends.retainAll(other.getFriends());
 
-        List<User> commonFriends = new ArrayList<>();
-        for (Integer friendId : commonFriendIds) {
-            commonFriends.add(getUserById(friendId));
-        }
-        return commonFriends;
+        return new ArrayList<>(commonFriends);
     }
 
     private void validateUser(User user) {
