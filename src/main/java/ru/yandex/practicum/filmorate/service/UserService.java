@@ -4,11 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -27,8 +27,7 @@ public class UserService {
 
     public User updateUser(User user) {
         log.info("Updating user: {}", user);
-        Optional<User> existingUser = userStorage.getUserById(user.getId());
-        if (existingUser.isEmpty()) {
+        if (!userStorage.getUserById(user.getId()).isPresent()) {
             log.error("User with ID {} not found", user.getId());
             throw new NotFoundException("User with ID " + user.getId() + " not found");
         }
@@ -37,10 +36,8 @@ public class UserService {
 
     public User getUserById(int id) {
         log.info("Retrieving user with ID: {}", id);
-        return userStorage.getUserById(id).orElseThrow(() -> {
-            log.error("User with ID {} not found", id);
-            return new NotFoundException("User with ID " + id + " not found");
-        });
+        return userStorage.getUserById(id)
+                .orElseThrow(() -> new NotFoundException("User with ID " + id + " not found"));
     }
 
     public List<User> getAllUsers() {
@@ -62,6 +59,9 @@ public class UserService {
         log.info("Removing friend: {} from user: {}", friendId, userId);
         User user = getUserById(userId);
         User friend = getUserById(friendId);
+        if (!user.getFriends().contains(friendId)) {
+            throw new ValidationException("User " + friendId + " is not a friend of user " + userId);
+        }
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
         userStorage.updateUser(user);

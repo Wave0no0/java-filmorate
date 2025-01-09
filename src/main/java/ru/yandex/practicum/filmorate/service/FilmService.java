@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
@@ -27,8 +28,7 @@ public class FilmService {
 
     public Film updateFilm(Film film) {
         log.info("Updating film: {}", film);
-        Optional<Film> existingFilm = filmStorage.getFilmById(film.getId());
-        if (existingFilm.isEmpty()) {
+        if (!filmStorage.getFilmById(film.getId()).isPresent()) {
             log.error("Film with ID {} not found", film.getId());
             throw new NotFoundException("Film with ID " + film.getId() + " not found");
         }
@@ -37,10 +37,8 @@ public class FilmService {
 
     public Film getFilmById(int id) {
         log.info("Retrieving film with ID: {}", id);
-        return filmStorage.getFilmById(id).orElseThrow(() -> {
-            log.error("Film with ID {} not found", id);
-            return new NotFoundException("Film with ID " + id + " not found");
-        });
+        return filmStorage.getFilmById(id)
+                .orElseThrow(() -> new NotFoundException("Film with ID " + id + " not found"));
     }
 
     public List<Film> getAllFilms() {
@@ -58,6 +56,9 @@ public class FilmService {
     public void removeLike(int filmId, int userId) {
         log.info("Removing like from user: {} to film: {}", userId, filmId);
         Film film = getFilmById(filmId);
+        if (!film.getLikes().contains(userId)) {
+            throw new ValidationException("User " + userId + " has not liked the film " + filmId);
+        }
         film.getLikes().remove(userId);
         filmStorage.updateFilm(film);
     }
