@@ -20,6 +20,9 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        if (!userStorage.getUserById(user.getId()).isPresent()) {
+            throw new NoSuchElementException("Пользователь с ID " + user.getId() + " не найден");
+        }
         return userStorage.updateUser(user);
     }
 
