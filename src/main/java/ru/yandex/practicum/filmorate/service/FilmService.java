@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
-import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class FilmService {
@@ -27,26 +27,8 @@ public class FilmService {
         return filmStorage.getAllFilms();
     }
 
-    public Film addLike(int filmId, int userId) {
-        Film film = getFilmOrThrow(filmId);
-        film.getLikes().add(userId);
-        return film;
-    }
-
-    public Film removeLike(int filmId, int userId) {
-        Film film = getFilmOrThrow(filmId);
-        film.getLikes().remove(userId);
-        return film;
-    }
-
-    public List<Film> getMostPopular(int count) {
-        return filmStorage.getAllFilms().stream()
-                .sorted(Comparator.comparingInt((Film f) -> f.getLikes().size()).reversed())
-                .limit(count)
-                .toList();
-    }
-
-    private Film getFilmOrThrow(int id) {
-        return filmStorage.getFilmById(id).orElseThrow(() -> new IllegalArgumentException("Film not found: " + id));
+    public Film getFilmById(int id) {
+        return filmStorage.getFilmById(id).orElseThrow(() ->
+                new NoSuchElementException("Фильм с ID " + id + " не найден"));
     }
 }
