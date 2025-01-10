@@ -55,16 +55,16 @@ public class FilmService {
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
-            throw new IllegalArgumentException("Название фильма не может быть пустым");
+            throw new IllegalArgumentException("Film name cannot be empty");
         }
         if (film.getDescription() != null && film.getDescription().length() > 200) {
-            throw new IllegalArgumentException("Описание фильма не может превышать 200 символов");
+            throw new IllegalArgumentException("Description cannot exceed 200 characters");
         }
         if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(java.time.LocalDate.of(1895, 12, 28))) {
-            throw new IllegalArgumentException("Дата релиза не может быть ранее 28 декабря 1895 года");
+            throw new IllegalArgumentException("Release date cannot be earlier than December 28, 1895");
         }
         if (film.getDuration() <= 0) {
-            throw new IllegalArgumentException("Продолжительность фильма должна быть положительной");
+            throw new IllegalArgumentException("Duration must be positive");
         }
     }
 }

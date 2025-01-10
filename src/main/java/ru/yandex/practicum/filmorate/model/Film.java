@@ -14,17 +14,17 @@ import java.util.Set;
 public class Film {
     private int id;
 
-    @NotBlank(message = "Название фильма не может быть пустым")
+    @NotBlank(message = "Film name cannot be empty")
     private String name;
 
-    @Size(max = 200, message = "Описание фильма не может превышать 200 символов")
+    @Size(max = 200, message = "Description cannot exceed 200 characters")
     private String description;
 
-    @NotNull(message = "Дата релиза не может быть пустой")
-    @ReleaseDateConstraint(message = "Дата релиза не может быть ранее 28 декабря 1895 года")
+    @NotNull(message = "Release date cannot be null")
+    @ReleaseDateConstraint(message = "Release date cannot be earlier than December 28, 1895")
     private LocalDate releaseDate;
 
-    @Positive(message = "Продолжительность фильма должна быть положительной")
+    @Positive(message = "Duration must be positive")
     private int duration;
 
     private final Set<Integer> likes = new HashSet<>();

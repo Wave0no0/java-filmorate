@@ -38,6 +38,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleGenericException(Exception e) {
-        return Map.of("error", "Произошла внутренняя ошибка: " + e.getMessage());
+        return Map.of("error", "Internal server error: " + e.getMessage());
     }
 }

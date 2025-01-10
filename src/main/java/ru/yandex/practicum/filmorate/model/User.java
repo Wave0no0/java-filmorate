@@ -13,22 +13,21 @@ import java.util.Set;
 public class User {
     private int id;
 
-    @Email(message = "Некорректный формат email")
-    @NotBlank(message = "Email не может быть пустым")
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email cannot be empty")
     private String email;
 
-    @NotBlank(message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S+$", message = "Логин не должен содержать пробелы")
+    @NotBlank(message = "Login cannot be empty")
+    @Pattern(regexp = "^\\S+$", message = "Login must not contain spaces")
     private String login;
 
     private String name;
 
-    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    @PastOrPresent(message = "Birthday must be in the past or present")
     private LocalDate birthday;
 
     private final Set<Integer> friends = new HashSet<>();
 
-    // Автоматическое заполнение имени, если пусто
     public String getName() {
         return (name == null || name.isBlank()) ? login : name;
     }
