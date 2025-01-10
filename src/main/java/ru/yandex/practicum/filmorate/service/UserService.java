@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
@@ -9,37 +8,37 @@ import java.util.*;
 @Service
 public class UserService {
     private final Map<Integer, User> users = new HashMap<>();
-    private int nextId = 1;
-
-    public User createUser(User user) {
-        validateUser(user);
-        user.setId(nextId++);
-        users.put(user.getId(), user);
-        return user;
-    }
-
-    public User updateUser(User user) {
-        if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("User not found with id: " + user.getId());
-        }
-        validateUser(user);
-        users.put(user.getId(), user);
-        return user;
-    }
-
-    public User getUserById(int id) {
-        return Optional.ofNullable(users.get(id))
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
-    }
+    private int id = 1;
 
     public List<User> getAllUsers() {
         return new ArrayList<>(users.values());
     }
 
+    public User createUser(User user) {
+        int newId = generateId();
+        User newUser = user.toBuilder().id(newId).build();
+        users.put(newId, newUser);
+        return newUser;
+    }
+
+    public User updateUser(User user) {
+        if (!users.containsKey(user.getId())) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " not found.");
+        }
+        users.put(user.getId(), user);
+        return user;
+    }
+
+    public User getUserById(int id) {
+        if (!users.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " not found.");
+        }
+        return users.get(id);
+    }
+
     public void addFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
-
         user.getFriends().add(friendId);
         friend.getFriends().add(userId);
     }
@@ -47,43 +46,22 @@ public class UserService {
     public void removeFriend(int userId, int friendId) {
         User user = getUserById(userId);
         User friend = getUserById(friendId);
-
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
     }
 
-    public List<User> getUserFriends(int userId) {
-        User user = getUserById(userId);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends()) {
-            friends.add(getUserById(friendId));
-        }
-        return friends;
+    public Set<Integer> getUserFriends(int userId) {
+        return getUserById(userId).getFriends();
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        User user = getUserById(userId);
-        User other = getUserById(otherId);
-
-        Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
-        commonFriendIds.retainAll(other.getFriends());
-
-        List<User> commonFriends = new ArrayList<>();
-        for (Integer friendId : commonFriendIds) {
-            commonFriends.add(getUserById(friendId));
-        }
-        return commonFriends;
+        Set<Integer> userFriends = getUserFriends(userId);
+        Set<Integer> otherFriends = getUserFriends(otherId);
+        userFriends.retainAll(otherFriends);
+        return userFriends.stream().map(this::getUserById).toList();
     }
 
-    private void validateUser(User user) {
-        if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Invalid email: " + user.getEmail());
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new IllegalArgumentException("Login cannot be empty or contain spaces");
-        }
-        if (user.getBirthday() == null || user.getBirthday().isAfter(java.time.LocalDate.now())) {
-            throw new IllegalArgumentException("Invalid birthday");
-        }
+    private int generateId() {
+        return id++;
     }
 }
