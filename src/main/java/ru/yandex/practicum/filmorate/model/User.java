@@ -34,3 +34,4 @@ public class User {
         return (name == null || name.isBlank()) ? login : name;
     }
 }
+

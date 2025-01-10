@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
@@ -8,31 +9,31 @@ import java.util.*;
 @Service
 public class FilmService {
     private final Map<Integer, Film> films = new HashMap<>();
-    private int id = 1;
-
-    public List<Film> getAllFilms() {
-        return new ArrayList<>(films.values());
-    }
+    private int nextId = 1;
 
     public Film createFilm(Film film) {
-        int newId = generateId();
-        Film newFilm = film.toBuilder().id(newId).build();
-        films.put(newId, newFilm);
-        return newFilm;
+        validateFilm(film);
+        film.setId(nextId++);
+        films.put(film.getId(), film);
+        return film;
     }
 
     public Film updateFilm(Film film) {
         if (!films.containsKey(film.getId())) {
-            throw new IllegalArgumentException("Film with ID " + film.getId() + " not found.");
+            throw new NotFoundException("Film not found with id: " + film.getId());
         }
+        validateFilm(film);
         films.put(film.getId(), film);
         return film;
     }
 
     public Film getFilmById(int id) {
-        // Обрабатываем отсутствие фильма через Optional
         return Optional.ofNullable(films.get(id))
-                .orElseThrow(() -> new IllegalArgumentException("Film with ID " + id + " not found."));
+                .orElseThrow(() -> new NotFoundException("Film not found with id: " + id));
+    }
+
+    public List<Film> getAllFilms() {
+        return new ArrayList<>(films.values());
     }
 
     public void addLike(int filmId, int userId) {
@@ -46,13 +47,24 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) {
-        return getAllFilms().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+        return films.values().stream()
+                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
                 .limit(count)
                 .toList();
     }
 
-    private int generateId() {
-        return id++;
+    private void validateFilm(Film film) {
+        if (film.getName() == null || film.getName().isBlank()) {
+            throw new IllegalArgumentException("Film name cannot be empty");
+        }
+        if (film.getDescription() != null && film.getDescription().length() > 200) {
+            throw new IllegalArgumentException("Description cannot exceed 200 characters");
+        }
+        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(java.time.LocalDate.of(1895, 12, 28))) {
+            throw new IllegalArgumentException("Release date cannot be earlier than December 28, 1895");
+        }
+        if (film.getDuration() <= 0) {
+            throw new IllegalArgumentException("Duration must be positive");
+        }
     }
 }
