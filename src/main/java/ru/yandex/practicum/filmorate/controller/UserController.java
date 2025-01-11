@@ -24,7 +24,7 @@ public class UserController {
             User createdUser = userService.createUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -41,46 +41,8 @@ public class UserController {
         }
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<?> addFriend(@PathVariable int id, @PathVariable int friendId) {
-        try {
-            userService.addFriend(id, friendId);
-            return ResponseEntity.ok(Map.of("message", "Friend added successfully"));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<?> removeFriend(@PathVariable int id, @PathVariable int friendId) {
-        try {
-            userService.removeFriend(id, friendId);
-            return ResponseEntity.ok(Map.of("message", "Friend removed successfully"));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable int id) {
-        try {
-            return ResponseEntity.ok(userService.getUserById(id));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
-    }
-
-    @GetMapping("/{id}/friends")
-    public ResponseEntity<?> getUserFriends(@PathVariable int id) {
-        try {
-            return ResponseEntity.ok(userService.getFriends(id));
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
     }
 }

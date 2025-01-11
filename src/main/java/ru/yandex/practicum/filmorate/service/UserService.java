@@ -18,12 +18,7 @@ public class UserService {
 
     public User createUser(User user) {
         validateUser(user);
-        if (users.values().stream().anyMatch(u -> u.getEmail().equals(user.getEmail()))) {
-            throw new ValidationException("Email already exists.");
-        }
-        if (users.values().stream().anyMatch(u -> u.getLogin().equals(user.getLogin()))) {
-            throw new ValidationException("Login already exists.");
-        }
+        checkUniqueEmailAndLogin(user);
         user.setId(generateId());
         users.put(user.getId(), user);
         return user;
@@ -34,41 +29,9 @@ public class UserService {
         if (!users.containsKey(user.getId())) {
             throw new NotFoundException("User with ID " + user.getId() + " not found.");
         }
+        checkUniqueEmailAndLogin(user);
         users.put(user.getId(), user);
         return user;
-    }
-
-    public User getUserById(int id) {
-        if (!users.containsKey(id)) {
-            throw new NotFoundException("User with ID " + id + " not found.");
-        }
-        return users.get(id);
-    }
-
-    public void addFriend(int userId, int friendId) {
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-    }
-
-    public void removeFriend(int userId, int friendId) {
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-        if (!user.getFriends().contains(friendId)) {
-            throw new NotFoundException("Friend with ID " + friendId + " not found for user " + userId);
-        }
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-    }
-
-    public List<User> getFriends(int userId) {
-        User user = getUserById(userId);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends()) {
-            friends.add(getUserById(friendId));
-        }
-        return friends;
     }
 
     private void validateUser(User user) {
@@ -78,14 +41,22 @@ public class UserService {
         if (!user.getEmail().contains("@")) {
             throw new ValidationException("Invalid email format.");
         }
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            throw new ValidationException("Login cannot be null or blank.");
-        }
-        if (user.getLogin().contains(" ")) {
-            throw new ValidationException("Login must not contain spaces.");
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+            throw new ValidationException("Login cannot be null, blank, or contain spaces.");
         }
         if (user.getBirthday() != null && user.getBirthday().isAfter(java.time.LocalDate.now())) {
             throw new ValidationException("Birthday must be in the past or present.");
+        }
+    }
+
+    private void checkUniqueEmailAndLogin(User user) {
+        for (User existingUser : users.values()) {
+            if (existingUser.getId() != user.getId() && existingUser.getEmail().equals(user.getEmail())) {
+                throw new ValidationException("Email already exists.");
+            }
+            if (existingUser.getId() != user.getId() && existingUser.getLogin().equals(user.getLogin())) {
+                throw new ValidationException("Login already exists.");
+            }
         }
     }
 
