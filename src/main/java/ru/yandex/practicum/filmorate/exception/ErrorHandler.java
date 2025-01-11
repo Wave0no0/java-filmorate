@@ -37,7 +37,7 @@ public class ErrorHandler {
         ));
     }
 
-    @ExceptionHandler(ConstraintViolationException.class)
+    @ExceptionHandler(ConstraintViolationException.class) //ks
     public ResponseEntity<Map<String, String>> handleConstraintViolationException(ConstraintViolationException e) {
         String errorMessage = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
