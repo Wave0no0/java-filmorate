@@ -41,7 +41,7 @@ public class FilmController {
     public ResponseEntity<?> updateFilm(@Valid @RequestBody Film film) {
         try {
             Film updatedFilm = filmService.updateFilm(film);
-            return ResponseEntity.ok(updatedFilm);
+            return ResponseEntity.ok(updatedFilm);//
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
