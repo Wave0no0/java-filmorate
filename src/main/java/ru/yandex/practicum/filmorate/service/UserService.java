@@ -18,7 +18,6 @@ public class UserService {
 
     public User createUser(User user) {
         validateUser(user);
-        // Проверка уникальности email и логина
         if (users.values().stream().anyMatch(u -> u.getEmail().equals(user.getEmail()))) {
             throw new ValidationException("Email already exists.");
         }
@@ -44,6 +43,32 @@ public class UserService {
             throw new NotFoundException("User with ID " + id + " not found.");
         }
         return users.get(id);
+    }
+
+    public void addFriend(int userId, int friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId);
+    }
+
+    public void removeFriend(int userId, int friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+        if (!user.getFriends().contains(friendId)) {
+            throw new NotFoundException("Friend with ID " + friendId + " not found for user " + userId);
+        }
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
+    }
+
+    public List<User> getFriends(int userId) {
+        User user = getUserById(userId);
+        List<User> friends = new ArrayList<>();
+        for (Integer friendId : user.getFriends()) {
+            friends.add(getUserById(friendId));
+        }
+        return friends;
     }
 
     private void validateUser(User user) {
