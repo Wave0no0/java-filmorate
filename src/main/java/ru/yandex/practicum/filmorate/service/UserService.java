@@ -18,10 +18,16 @@ public class UserService {
 
     public User createUser(User user) {
         validateUser(user);
-        int newId = generateId();
-        User newUser = user.toBuilder().id(newId).build();
-        users.put(newId, newUser);
-        return newUser;
+        // Проверка уникальности email и логина
+        if (users.values().stream().anyMatch(u -> u.getEmail().equals(user.getEmail()))) {
+            throw new ValidationException("Email already exists.");
+        }
+        if (users.values().stream().anyMatch(u -> u.getLogin().equals(user.getLogin()))) {
+            throw new ValidationException("Login already exists.");
+        }
+        user.setId(generateId());
+        users.put(user.getId(), user);
+        return user;
     }
 
     public User updateUser(User user) {
@@ -42,19 +48,19 @@ public class UserService {
 
     private void validateUser(User user) {
         if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new ValidationException("Email cannot be null or blank");
+            throw new ValidationException("Email cannot be null or blank.");
         }
         if (!user.getEmail().contains("@")) {
-            throw new ValidationException("Invalid email format");
+            throw new ValidationException("Invalid email format.");
         }
         if (user.getLogin() == null || user.getLogin().isBlank()) {
-            throw new ValidationException("Login cannot be null or blank");
+            throw new ValidationException("Login cannot be null or blank.");
         }
         if (user.getLogin().contains(" ")) {
-            throw new ValidationException("Login must not contain spaces");
+            throw new ValidationException("Login must not contain spaces.");
         }
         if (user.getBirthday() != null && user.getBirthday().isAfter(java.time.LocalDate.now())) {
-            throw new ValidationException("Birthday must be in the past or present");
+            throw new ValidationException("Birthday must be in the past or present.");
         }
     }
 
