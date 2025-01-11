@@ -1,66 +1,66 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    private final Map<Integer, User> users = new HashMap<>();
-    private int id = 1;
+    private final UserStorage userStorage;
 
     public List<User> getAllUsers() {
-        return new ArrayList<>(users.values());
+        return userStorage.getAllUsers();
+    }
+
+    public User getUserById(int id) {
+        return userStorage.getUser(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + id + " not found."));
     }
 
     public User createUser(User user) {
-        validateUser(user);
-        checkUniqueEmailAndLogin(user);
-        user.setId(generateId());
-        users.put(user.getId(), user);
-        return user;
+        user.validate();
+        return userStorage.addUser(user);
     }
 
     public User updateUser(User user) {
-        validateUser(user);
-        if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("User with ID " + user.getId() + " not found.");
-        }
-        checkUniqueEmailAndLogin(user);
-        users.put(user.getId(), user);
-        return user;
+        user.validate();
+        return userStorage.updateUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + user.getId() + " not found."));
     }
 
-    private void validateUser(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new ValidationException("Email cannot be null or blank.");
-        }
-        if (!user.getEmail().contains("@")) {
-            throw new ValidationException("Invalid email format.");
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new ValidationException("Login cannot be null, blank, or contain spaces.");
-        }
-        if (user.getBirthday() != null && user.getBirthday().isAfter(java.time.LocalDate.now())) {
-            throw new ValidationException("Birthday must be in the past or present.");
-        }
+    public void addFriend(int userId, int friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+        user.addFriend(friendId);
+        friend.addFriend(userId);
     }
 
-    private void checkUniqueEmailAndLogin(User user) {
-        for (User existingUser : users.values()) {
-            if (existingUser.getId() != user.getId() && existingUser.getEmail().equals(user.getEmail())) {
-                throw new ValidationException("Email already exists.");
-            }
-            if (existingUser.getId() != user.getId() && existingUser.getLogin().equals(user.getLogin())) {
-                throw new ValidationException("Login already exists.");
-            }
-        }
+    public void removeFriend(int userId, int friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+        user.removeFriend(friendId);
+        friend.removeFriend(userId);
     }
 
-    private int generateId() {
-        return id++;
+    public Set<User> getFriends(int userId) {
+        return getUserById(userId).getFriends().stream()
+                .map(this::getUserById)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<User> getCommonFriends(int userId, int otherId) {
+        Set<Integer> userFriends = getUserById(userId).getFriends();
+        Set<Integer> otherFriends = getUserById(otherId).getFriends();
+        return userFriends.stream()
+                .filter(otherFriends::contains)
+                .map(this::getUserById)
+                .collect(Collectors.toSet());
     }
 }

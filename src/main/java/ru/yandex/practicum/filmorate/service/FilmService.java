@@ -1,80 +1,66 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import java.util.*;
+import java.util.List;
+import java.util.PriorityQueue;
 
 @Service
+@RequiredArgsConstructor
 public class FilmService {
-    private final Map<Integer, Film> films = new HashMap<>();
-    private int nextId = 1;
+    private final FilmStorage filmStorage;
+    private final UserService userService;
 
-    public Film createFilm(Film film) {
-        validateFilm(film);
-        if (films.values().stream().anyMatch(f -> f.getName().equalsIgnoreCase(film.getName()))) {
-            throw new ValidationException("Film with the same name already exists.");
-        }
-        film.setId(nextId++);
-        films.put(film.getId(), film);
-        return film;
-    }
-
-    public Film updateFilm(Film film) {
-        validateFilm(film);
-        if (!films.containsKey(film.getId())) {
-            throw new NotFoundException("Film with ID " + film.getId() + " not found.");
-        }
-        films.put(film.getId(), film);
-        return film;
+    public List<Film> getAllFilms() {
+        return filmStorage.getAllFilms();
     }
 
     public Film getFilmById(int id) {
-        return Optional.ofNullable(films.get(id))
-                .orElseThrow(() -> new NotFoundException("Film with ID " + id + " not found."));
+        return filmStorage.getFilm(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Film with ID " + id + " not found."));
     }
 
-    public List<Film> getAllFilms() {
-        return new ArrayList<>(films.values());
+    public Film createFilm(Film film) {
+        film.validate();
+        return filmStorage.addFilm(film);
     }
 
-    // Новый метод для добавления лайка
+    public Film updateFilm(Film film) {
+        film.validate();
+        return filmStorage.updateFilm(film)
+                .orElseThrow(() -> new ResourceNotFoundException("Film with ID " + film.getId() + " not found."));
+    }
+
     public void addLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
-        film.getLikes().add(userId); // Добавляем userId в Set лайков
+        Film film = validateFilmAndUserExistence(filmId, userId);
+        film.addLike(userId);
     }
 
-    // Новый метод для удаления лайка
     public void removeLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
-        if (!film.getLikes().contains(userId)) {
-            throw new NotFoundException("Like from user " + userId + " not found for film " + filmId);
-        }
-        film.getLikes().remove(userId);
+        Film film = validateFilmAndUserExistence(filmId, userId);
+        film.removeLike(userId);
     }
 
-    // Новый метод для получения популярных фильмов
     public List<Film> getPopularFilms(int count) {
-        return films.values().stream()
-                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size()) // Сортируем по количеству лайков
-                .limit(count)
+        PriorityQueue<Film> topFilms = new PriorityQueue<>((f1, f2) -> Integer.compare(f1.getLikeCount(), f2.getLikeCount()));
+        for (Film film : filmStorage.getAllFilms()) {
+            topFilms.offer(film);
+            if (topFilms.size() > count) {
+                topFilms.poll();
+            }
+        }
+        return topFilms.stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikeCount(), f1.getLikeCount()))
                 .toList();
     }
 
-    private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Film name cannot be empty.");
-        }
-        if (film.getDescription() != null && film.getDescription().length() > 200) {
-            throw new ValidationException("Description cannot exceed 200 characters.");
-        }
-        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(java.time.LocalDate.of(1895, 12, 28))) {
-            throw new ValidationException("Release date cannot be earlier than December 28, 1895.");
-        }
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Duration must be positive.");
-        }
+    private Film validateFilmAndUserExistence(int filmId, int userId) {
+        Film film = getFilmById(filmId);
+        userService.getUserById(userId);
+        return film;
     }
 }

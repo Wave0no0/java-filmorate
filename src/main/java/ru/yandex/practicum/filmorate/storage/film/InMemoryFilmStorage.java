@@ -1,10 +1,13 @@
-package ru.yandex.practicum.filmorate.storage.memory;
+package ru.yandex.practicum.filmorate.storage.film;
 
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
@@ -13,22 +16,24 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
+        film.validate();
         film.setId(currentId++);
         films.put(film.getId(), film);
         return film;
     }
 
     @Override
-    public Film updateFilm(Film film) {
+    public Optional<Film> updateFilm(Film film) {
         if (!films.containsKey(film.getId())) {
-            throw new NoSuchElementException("Film not found");
+            return Optional.empty();
         }
+        film.validate();
         films.put(film.getId(), film);
-        return film;
+        return Optional.of(film);
     }
 
     @Override
-    public Optional<Film> getFilmById(int id) {
+    public Optional<Film> getFilm(int id) {
         return Optional.ofNullable(films.get(id));
     }
 
