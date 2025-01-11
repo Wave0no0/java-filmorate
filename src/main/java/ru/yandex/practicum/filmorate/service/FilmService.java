@@ -40,6 +40,29 @@ public class FilmService {
         return new ArrayList<>(films.values());
     }
 
+    // Новый метод для добавления лайка
+    public void addLike(int filmId, int userId) {
+        Film film = getFilmById(filmId);
+        film.getLikes().add(userId); // Добавляем userId в Set лайков
+    }
+
+    // Новый метод для удаления лайка
+    public void removeLike(int filmId, int userId) {
+        Film film = getFilmById(filmId);
+        if (!film.getLikes().contains(userId)) {
+            throw new NotFoundException("Like from user " + userId + " not found for film " + filmId);
+        }
+        film.getLikes().remove(userId);
+    }
+
+    // Новый метод для получения популярных фильмов
+    public List<Film> getPopularFilms(int count) {
+        return films.values().stream()
+                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size()) // Сортируем по количеству лайков
+                .limit(count)
+                .toList();
+    }
+
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             throw new ValidationException("Film name cannot be empty.");
