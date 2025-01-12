@@ -23,12 +23,8 @@ public class FilmController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getFilmById(@PathVariable int id) {
-        try {
-            return ResponseEntity.ok(filmService.getFilmById(id));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Film> getFilmById(@PathVariable int id) {
+        return ResponseEntity.ok(filmService.getFilmById(id));
     }
 
     @PostMapping
@@ -38,33 +34,21 @@ public class FilmController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateFilm(@Valid @RequestBody Film film) {
-        try {
-            Film updatedFilm = filmService.updateFilm(film);
-            return ResponseEntity.ok(updatedFilm);//
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) {
+        Film updatedFilm = filmService.updateFilm(film);
+        return ResponseEntity.ok(updatedFilm);
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public ResponseEntity<?> addLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            filmService.addLike(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Like added successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> addLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.addLike(id, userId);
+        return ResponseEntity.ok(Map.of("message", "Like added successfully"));
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public ResponseEntity<?> removeLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            filmService.removeLike(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Like removed successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> removeLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.removeLike(id, userId);
+        return ResponseEntity.ok(Map.of("message", "Like removed successfully"));
     }
 
     @GetMapping("/popular")

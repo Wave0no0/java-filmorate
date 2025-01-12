@@ -24,12 +24,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable int id) {
-        try {
-            return ResponseEntity.ok(userService.getUserById(id));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<User> getUserById(@PathVariable int id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PostMapping
@@ -39,33 +35,21 @@ public class UserController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateUser(@Valid @RequestBody User user) {
-        try {
-            User updatedUser = userService.updateUser(user);
-            return ResponseEntity.ok(updatedUser);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
+        User updatedUser = userService.updateUser(user);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<?> addFriend(@PathVariable int id, @PathVariable int friendId) {
-        try {
-            userService.addFriend(id, friendId);
-            return ResponseEntity.ok(Map.of("message", "Friend added successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> addFriend(@PathVariable int id, @PathVariable int friendId) {
+        userService.addFriend(id, friendId);
+        return ResponseEntity.ok(Map.of("message", "Friend added successfully"));
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<?> removeFriend(@PathVariable int id, @PathVariable int friendId) {
-        try {
-            userService.removeFriend(id, friendId);
-            return ResponseEntity.ok(Map.of("message", "Friend removed successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> removeFriend(@PathVariable int id, @PathVariable int friendId) {
+        userService.removeFriend(id, friendId);
+        return ResponseEntity.ok(Map.of("message", "Friend removed successfully"));
     }
 
     @GetMapping("/{id}/friends")
@@ -75,6 +59,6 @@ public class UserController {
 
     @GetMapping("/{id}/friends/common/{otherId}")
     public ResponseEntity<List<User>> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
-        return ResponseEntity.ok(userService.getCommonFriends(id, otherId).stream().toList());
+        return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
     }
 }

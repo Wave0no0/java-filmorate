@@ -36,31 +36,35 @@ public class UserService {
     }
 
     public void addFriend(int userId, int friendId) {
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-        user.addFriend(friendId);
-        friend.addFriend(userId);
+        User user = getValidUser(userId);
+        User friend = getValidUser(friendId);
+        user.addFriend(friend.getId());
+        friend.addFriend(user.getId());
     }
 
     public void removeFriend(int userId, int friendId) {
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-        user.removeFriend(friendId);
-        friend.removeFriend(userId);
+        User user = getValidUser(userId);
+        User friend = getValidUser(friendId);
+        user.removeFriend(friend.getId());
+        friend.removeFriend(user.getId());
     }
 
     public Set<User> getFriends(int userId) {
-        return getUserById(userId).getFriends().stream()
-                .map(this::getUserById)
+        return getValidUser(userId).getFriends().stream()
+                .map(this::getValidUser)
                 .collect(Collectors.toSet());
     }
 
-    public Set<User> getCommonFriends(int userId, int otherId) {
-        Set<Integer> userFriends = getUserById(userId).getFriends();
-        Set<Integer> otherFriends = getUserById(otherId).getFriends();
+    public List<User> getCommonFriends(int userId, int otherId) {
+        Set<Integer> userFriends = getValidUser(userId).getFriends();
+        Set<Integer> otherFriends = getValidUser(otherId).getFriends();
         return userFriends.stream()
                 .filter(otherFriends::contains)
-                .map(this::getUserById)
-                .collect(Collectors.toSet());
+                .map(this::getValidUser)
+                .toList();
+    }
+
+    public User getValidUser(int userId) {
+        return getUserById(userId);
     }
 }

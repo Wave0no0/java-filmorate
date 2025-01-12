@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.List;
-import java.util.PriorityQueue;
 
 @Service
 @RequiredArgsConstructor
@@ -36,31 +36,25 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = validateFilmAndUserExistence(filmId, userId);
-        film.addLike(userId);
+        Film film = getValidFilm(filmId);
+        User user = userService.getValidUser(userId);
+        film.addLike(user.getId());
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = validateFilmAndUserExistence(filmId, userId);
-        film.removeLike(userId);
+        Film film = getValidFilm(filmId);
+        User user = userService.getValidUser(userId);
+        film.removeLike(user.getId());
     }
 
     public List<Film> getPopularFilms(int count) {
-        PriorityQueue<Film> topFilms = new PriorityQueue<>((f1, f2) -> Integer.compare(f1.getLikeCount(), f2.getLikeCount()));
-        for (Film film : filmStorage.getAllFilms()) {
-            topFilms.offer(film);
-            if (topFilms.size() > count) {
-                topFilms.poll();
-            }
-        }
-        return topFilms.stream()
+        return filmStorage.getAllFilms().stream()
                 .sorted((f1, f2) -> Integer.compare(f2.getLikeCount(), f1.getLikeCount()))
+                .limit(count)
                 .toList();
     }
 
-    private Film validateFilmAndUserExistence(int filmId, int userId) {
-        Film film = getFilmById(filmId);
-        userService.getUserById(userId);
-        return film;
+    private Film getValidFilm(int filmId) {
+        return getFilmById(filmId);
     }
 }
