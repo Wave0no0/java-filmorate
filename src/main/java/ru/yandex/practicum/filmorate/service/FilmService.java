@@ -1,60 +1,48 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserService userService;
+    private final UserStorage userStorage;
+
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
+    }
+
+    public Film createFilm(Film film) {
+        return filmStorage.addFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        return filmStorage.updateFilm(film);
+    }
+
+    public Optional<Film> getFilmById(int id) {
+        return filmStorage.getFilmById(id);
+    }
 
     public List<Film> getAllFilms() {
         return filmStorage.getAllFilms();
     }
 
-    public Film getFilmById(int id) {
-        return filmStorage.getFilm(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Film with ID " + id + " not found."));
-    }
-
-    public Film createFilm(Film film) {
-        film.validate();
-        return filmStorage.addFilm(film);
-    }
-
-    public Film updateFilm(Film film) {
-        film.validate();
-        return filmStorage.updateFilm(film)
-                .orElseThrow(() -> new ResourceNotFoundException("Film with ID " + film.getId() + " not found."));
-    }
-
     public void addLike(int filmId, int userId) {
-        Film film = getValidFilm(filmId);
-        User user = userService.getValidUser(userId);
-        film.addLike(user.getId());
+        filmStorage.addLike(filmId, userId); // Метод в хранилище для добавления лайка
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = getValidFilm(filmId);
-        User user = userService.getValidUser(userId);
-        film.removeLike(user.getId());
+        filmStorage.removeLike(filmId, userId); // Метод в хранилище для удаления лайка
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.getAllFilms().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikeCount(), f1.getLikeCount()))
-                .limit(count)
-                .toList();
-    }
-
-    private Film getValidFilm(int filmId) {
-        return getFilmById(filmId);
+        return filmStorage.getPopularFilms(count); // Метод в хранилище для получения популярных фильмов
     }
 }

@@ -1,13 +1,15 @@
 package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     private int id;
 
@@ -25,21 +27,6 @@ public class User {
     private LocalDate birthday;
 
     private final Set<Integer> friends = new HashSet<>();
-
-    public void validate() {
-        if (email == null || !email.contains("@")) {
-            throw new IllegalArgumentException("Email must contain '@'.");
-        }
-        if (login == null || login.isBlank() || login.contains(" ")) {
-            throw new IllegalArgumentException("Login cannot be blank or contain spaces.");
-        }
-        if (name == null || name.isBlank()) {
-            name = login;
-        }
-        if (birthday != null && birthday.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Birthday must not be in the future.");
-        }
-    }
 
     public void addFriend(int friendId) {
         friends.add(friendId);

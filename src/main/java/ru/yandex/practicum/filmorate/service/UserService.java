@@ -1,70 +1,49 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+
+    public UserService(UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
+
+    public User createUser(User user) {
+        return userStorage.addUser(user);
+    }
+
+    public User updateUser(User user) {
+        return userStorage.updateUser(user);
+    }
+
+    public Optional<User> getUserById(int id) {
+        return userStorage.getUserById(id);
+    }
 
     public List<User> getAllUsers() {
         return userStorage.getAllUsers();
     }
 
-    public User getUserById(int id) {
-        return userStorage.getUser(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + id + " not found."));
-    }
-
-    public User createUser(User user) {
-        user.validate();
-        return userStorage.addUser(user);
-    }
-
-    public User updateUser(User user) {
-        user.validate();
-        return userStorage.updateUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + user.getId() + " not found."));
-    }
-
     public void addFriend(int userId, int friendId) {
-        User user = getValidUser(userId);
-        User friend = getValidUser(friendId);
-        user.addFriend(friend.getId());
-        friend.addFriend(user.getId());
+        userStorage.addFriend(userId, friendId); // Метод в хранилище для добавления друга
     }
 
     public void removeFriend(int userId, int friendId) {
-        User user = getValidUser(userId);
-        User friend = getValidUser(friendId);
-        user.removeFriend(friend.getId());
-        friend.removeFriend(user.getId());
+        userStorage.removeFriend(userId, friendId); // Метод в хранилище для удаления друга
     }
 
-    public Set<User> getFriends(int userId) {
-        return getValidUser(userId).getFriends().stream()
-                .map(this::getValidUser)
-                .collect(Collectors.toSet());
+    public List<User> getFriends(int userId) {
+        return userStorage.getFriends(userId); // Метод в хранилище для получения друзей
     }
 
-    public List<User> getCommonFriends(int userId, int otherId) {
-        Set<Integer> userFriends = getValidUser(userId).getFriends();
-        Set<Integer> otherFriends = getValidUser(otherId).getFriends();
-        return userFriends.stream()
-                .filter(otherFriends::contains)
-                .map(this::getValidUser)
-                .toList();
-    }
-
-    public User getValidUser(int userId) {
-        return getUserById(userId);
+    public List<User> getCommonFriends(int userId, int otherUserId) {
+        return userStorage.getCommonFriends(userId, otherUserId); // Метод в хранилище для получения общих друзей
     }
 }
