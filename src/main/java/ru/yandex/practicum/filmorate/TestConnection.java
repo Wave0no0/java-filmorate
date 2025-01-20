@@ -12,7 +12,7 @@ public class TestConnection {
                 System.out.println("Подключение к базе данных успешно!");
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка подключения: " + e.getMessage());
+            System.err.println("Ошибка подключения: " + e.getMessage());//
         }
     }
 }
