@@ -67,11 +67,10 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
-        // SQL для добавления фильма в таблицу "films"
+        // Сохраняем фильм в таблицу films
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        // Выполняем вставку данных о фильме и получаем сгенерированный ID
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, film.getName());
@@ -85,11 +84,13 @@ public class FilmDbStorage implements FilmStorage {
         int filmId = Objects.requireNonNull(keyHolder.getKey()).intValue();
         film.setId(filmId);
 
-        // Сохраняем жанры фильма в таблице "film_genres"
+        // Сохраняем жанры (убираем дубли)
         if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)", filmId, genre.getId());
-            }
+            film.getGenres().stream()
+                    .distinct()
+                    .forEach(genre -> jdbcTemplate.update(
+                            "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)", filmId, genre.getId()
+                    ));
         }
 
         return film;

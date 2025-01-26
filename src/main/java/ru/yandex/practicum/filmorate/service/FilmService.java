@@ -76,32 +76,21 @@ public class FilmService {
                     return new ResourceNotFoundException("Фильм с ID " + id + " не найден.");
                 });
 
-        // Заполняем данные о MPA (рейтинге)
-        if (film.getMpa() != null && film.getMpa().getId() != null) {
-            Rating mpa = ratingService.getRatingById(film.getMpa().getId());
-            if (mpa != null) {
-                film.setMpa(mpa);
-            } else {
-                log.warn("Рейтинг с ID {} не найден для фильма с ID {}", film.getMpa().getId(), id);
-                film.setMpa(null); // Предотвращаем null в JSON ответе
-            }
-        }
-
-        // Заполняем данные о жанрах
+        // Заполняем жанры (убираем дубликаты и сортируем)
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             List<Genre> genres = film.getGenres().stream()
-                    .map(genre -> genreService.getGenreById(genre.getId()))
-                    .filter(Objects::nonNull) // Убираем отсутствующие жанры
+                    .distinct()
                     .sorted(Comparator.comparing(Genre::getId))
                     .toList();
             film.setGenres(genres);
         } else {
-            film.setGenres(new ArrayList<>()); // Возвращаем пустой список вместо null
+            film.setGenres(new ArrayList<>()); // Пустой список вместо null
         }
 
         log.info("Фильм с ID {} успешно получен: {}", id, film);
         return film;
     }
+
 
     public Film createFilm(Film film) {
         log.info("Создание нового фильма: {}", film);
@@ -175,31 +164,27 @@ public class FilmService {
     }
 
     private void validateGenresAndRating(Film film) {
-        // Проверка MPA
+        // Проверяем MPA-рейтинг
         if (film.getMpa() == null || film.getMpa().getId() == null) {
             throw new BadRequestException("MPA-рейтинг обязателен для указания.");
-        } else {
-            // Проверяем, существует ли указанный рейтинг
-            Rating rating = ratingService.getRatingById(film.getMpa().getId());
-            if (rating == null) {
-                throw new BadRequestException("Рейтинг с ID " + film.getMpa().getId() + " не найден.");
-            }
         }
 
-        // Проверка жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            film.setGenres(film.getGenres().stream()
-                    .distinct() // Убираем дубли
-                    .map(genre -> {
-                        Genre retrievedGenre = genreService.getGenreById(genre.getId());
-                        if (retrievedGenre == null) {
-                            throw new BadRequestException("Жанр с ID " + genre.getId() + " не найден.");
-                        }
-                        return retrievedGenre;
-                    })
-                    .toList());
+        // Проверяем жанры
+        if (film.getGenres() == null || film.getGenres().isEmpty()) {
+            throw new BadRequestException("Фильм должен содержать хотя бы 1 жанр.");
+        }
+
+        // Убираем дубликаты жанров
+        film.setGenres(film.getGenres().stream()
+                .distinct()
+                .toList());
+
+        // Проверяем, что жанров минимум 2
+        if (film.getGenres().size() < 2) {
+            throw new BadRequestException("Фильм должен содержать минимум 2 жанра.");
         }
     }
+
 
     private void populateFilmData(Film film) {
         // Заполняем жанры
