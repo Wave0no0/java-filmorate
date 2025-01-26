@@ -108,7 +108,17 @@ public class FilmService {
 
         // Проверяем корректность данных фильма
         validateReleaseDate(film);
-        validateGenresAndRating(film); // Проверяем жанры и рейтинг
+        validateGenresAndRating(film);
+
+        // Если жанров меньше двух, добавляем жанры по умолчанию
+        if (film.getGenres().size() < 2) {
+            log.warn("Фильм содержит меньше двух жанров, добавляем жанры по умолчанию.");
+            List<Genre> defaultGenres = List.of(
+                    genreService.getGenreById(1), // Комедия
+                    genreService.getGenreById(2)  // Драма
+            );
+            film.setGenres(defaultGenres);
+        }
 
         // Сохраняем фильм в базе
         Film createdFilm = filmStorage.addFilm(film);
@@ -187,18 +197,21 @@ public class FilmService {
         }
 
         // Проверка жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            film.setGenres(film.getGenres().stream()
-                    .distinct() // Убираем дубли
-                    .map(genre -> {
-                        Genre retrievedGenre = genreService.getGenreById(genre.getId());
-                        if (retrievedGenre == null) {
-                            throw new BadRequestException("Жанр с ID " + genre.getId() + " не найден.");
-                        }
-                        return retrievedGenre;
-                    })
-                    .toList());
+        if (film.getGenres() == null || film.getGenres().isEmpty() || film.getGenres().size() < 2) {
+            throw new BadRequestException("Фильм должен содержать минимум 2 жанра.");
         }
+
+        // Убираем дубликаты и проверяем существование жанров
+        film.setGenres(film.getGenres().stream()
+                .distinct()
+                .map(genre -> {
+                    Genre retrievedGenre = genreService.getGenreById(genre.getId());
+                    if (retrievedGenre == null) {
+                        throw new BadRequestException("Жанр с ID " + genre.getId() + " не найден.");
+                    }
+                    return retrievedGenre;
+                })
+                .toList());
     }
 
     private void populateFilmData(Film film) {
