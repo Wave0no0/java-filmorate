@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class RatingDbStorage implements ru.yandex.practicum.filmorate.storage.rating.RatingStorage {
+public class RatingDbStorage implements ru.yandex.practicum.filmorate.storage.mpa.RatingStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
