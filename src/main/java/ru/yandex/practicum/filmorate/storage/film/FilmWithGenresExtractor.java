@@ -32,13 +32,13 @@ public class FilmWithGenresExtractor implements ResultSetExtractor<List<Film>> {
                 }
             });
 
-            // Установка рейтинга
-            if (rs.getInt("rating_id") != 0) {
-                Rating mpa = new Rating(rs.getInt("rating_id"), rs.getString("rating_name"));
+            // Добавляем рейтинг (MPA)
+            if (rs.getInt("mpa_rating") != 0) {
+                Rating mpa = new Rating(rs.getInt("mpa_rating"), null); // Имя рейтинга можно подтянуть при необходимости
                 film.setMpa(mpa);
             }
 
-            // Установка жанров
+            // Добавляем жанры
             int genreId = rs.getInt("genre_id");
             if (!rs.wasNull()) {
                 Genre genre = new Genre(genreId, rs.getString("genre_name"));
