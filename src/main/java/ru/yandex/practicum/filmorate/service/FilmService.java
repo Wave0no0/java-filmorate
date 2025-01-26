@@ -12,8 +12,10 @@ import ru.yandex.practicum.filmorate.model.Rating;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class FilmService {
@@ -35,19 +37,28 @@ public class FilmService {
 
         List<Film> films = filmStorage.getAllFilms();
 
-        // Заполняем данные о MPA и жанрах для каждого фильма
         films.forEach(film -> {
+            // Заполняем данные о MPA
             if (film.getMpa() != null && film.getMpa().getId() != null) {
                 Rating mpa = ratingService.getRatingById(film.getMpa().getId());
-                film.setMpa(mpa);
+                if (mpa != null) {
+                    film.setMpa(mpa);
+                } else {
+                    log.warn("Рейтинг со ID {} не найден для фильма с ID {}", film.getMpa().getId(), film.getId());
+                    film.setMpa(null); // Обрабатываем отсутствующий рейтинг
+                }
             }
 
+            // Заполняем данные о жанрах
             if (film.getGenres() != null && !film.getGenres().isEmpty()) {
                 List<Genre> genres = film.getGenres().stream()
                         .map(genre -> genreService.getGenreById(genre.getId()))
-                        .sorted(Comparator.comparing(Genre::getId)) // Сортируем по ID жанров
+                        .filter(Objects::nonNull)
+                        .sorted(Comparator.comparing(Genre::getId))
                         .toList();
                 film.setGenres(genres);
+            } else {
+                film.setGenres(new ArrayList<>());
             }
         });
 
@@ -68,16 +79,24 @@ public class FilmService {
         // Заполняем данные о MPA (рейтинге)
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             Rating mpa = ratingService.getRatingById(film.getMpa().getId());
-            film.setMpa(mpa);
+            if (mpa != null) {
+                film.setMpa(mpa);
+            } else {
+                log.warn("Рейтинг с ID {} не найден для фильма с ID {}", film.getMpa().getId(), id);
+                film.setMpa(null); // Предотвращаем null в JSON ответе
+            }
         }
 
         // Заполняем данные о жанрах
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             List<Genre> genres = film.getGenres().stream()
                     .map(genre -> genreService.getGenreById(genre.getId()))
-                    .sorted(Comparator.comparing(Genre::getId)) // Сортируем по ID жанров
+                    .filter(Objects::nonNull) // Убираем отсутствующие жанры
+                    .sorted(Comparator.comparing(Genre::getId))
                     .toList();
             film.setGenres(genres);
+        } else {
+            film.setGenres(new ArrayList<>()); // Возвращаем пустой список вместо null
         }
 
         log.info("Фильм с ID {} успешно получен: {}", id, film);
@@ -87,11 +106,16 @@ public class FilmService {
     public Film createFilm(Film film) {
         log.info("Создание нового фильма: {}", film);
 
+        // Проверяем корректность данных фильма
         validateReleaseDate(film);
-        validateGenresAndRating(film);
+        validateGenresAndRating(film); // Проверяем жанры и рейтинг
 
+        // Сохраняем фильм в базе
         Film createdFilm = filmStorage.addFilm(film);
-        populateFilmData(createdFilm); // Добавляем названия жанров и рейтингов
+
+        // Наполняем фильм полными данными (mpa и genres)
+        populateFilmData(createdFilm);
+
         log.info("Фильм успешно создан: {}", createdFilm);
         return createdFilm;
     }
@@ -99,18 +123,23 @@ public class FilmService {
     public Film updateFilm(Film film) {
         log.info("Обновление фильма с ID {}", film.getId());
 
+        // Проверяем существование фильма
         getFilmById(film.getId());
 
+        // Проверяем корректность данных
         validateReleaseDate(film);
         validateGenresAndRating(film);
 
+        // Обновляем фильм в базе
         Film updatedFilm = filmStorage.updateFilm(film)
                 .orElseThrow(() -> {
                     log.warn("Фильм с ID {} не найден для обновления", film.getId());
                     return new ResourceNotFoundException("Фильм с ID " + film.getId() + " не найден.");
                 });
 
-        populateFilmData(updatedFilm); // Добавляем названия жанров и рейтингов
+        // Наполняем фильм полными данными (mpa и genres)
+        populateFilmData(updatedFilm);
+
         log.info("Фильм успешно обновлен: {}", updatedFilm);
         return updatedFilm;
     }
@@ -146,9 +175,21 @@ public class FilmService {
     }
 
     private void validateGenresAndRating(Film film) {
+        // Проверка MPA
+        if (film.getMpa() == null || film.getMpa().getId() == null) {
+            throw new BadRequestException("MPA-рейтинг обязателен для указания.");
+        } else {
+            // Проверяем, существует ли указанный рейтинг
+            Rating rating = ratingService.getRatingById(film.getMpa().getId());
+            if (rating == null) {
+                throw new BadRequestException("Рейтинг с ID " + film.getMpa().getId() + " не найден.");
+            }
+        }
+
+        // Проверка жанров
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             film.setGenres(film.getGenres().stream()
-                    .distinct()
+                    .distinct() // Убираем дубли
                     .map(genre -> {
                         Genre retrievedGenre = genreService.getGenreById(genre.getId());
                         if (retrievedGenre == null) {
@@ -158,26 +199,27 @@ public class FilmService {
                     })
                     .toList());
         }
-
-        if (film.getMpa() != null && film.getMpa().getId() != null) {
-            Rating rating = ratingService.getRatingById(film.getMpa().getId());
-            if (rating == null) {
-                throw new BadRequestException("Рейтинг с ID " + film.getMpa().getId() + " не найден.");
-            }
-            film.setMpa(rating);
-        }
     }
 
     private void populateFilmData(Film film) {
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             film.setGenres(film.getGenres().stream()
                     .map(genre -> genreService.getGenreById(genre.getId()))
+                    .filter(Objects::nonNull)
                     .sorted(Comparator.comparing(Genre::getId))
                     .toList());
+        } else {
+            film.setGenres(new ArrayList<>());
         }
 
         if (film.getMpa() != null && film.getMpa().getId() != null) {
-            film.setMpa(ratingService.getRatingById(film.getMpa().getId()));
+            Rating mpa = ratingService.getRatingById(film.getMpa().getId());
+            if (mpa != null) {
+                film.setMpa(mpa);
+            } else {
+                log.warn("Рейтинг с ID {} не найден для фильма со ID {}", film.getMpa().getId(), film.getId());
+                film.setMpa(null);
+            }
         }
     }
 }
