@@ -11,13 +11,12 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class FilmWithGenresExtractor implements ResultSetExtractor<List<Film>> {
-
     @Override
-    public List<Film> extractData(ResultSet rs) throws SQLException, DataAccessException {
+    public List<Film> extractData(ResultSet rs) throws SQLException {
         Map<Integer, Film> films = new LinkedHashMap<>();
 
         while (rs.next()) {
-            int filmId = rs.getInt("id");
+            int filmId = rs.getInt("id"); // Убедитесь, что это поле извлекается корректно
             Film film = films.computeIfAbsent(filmId, id -> {
                 try {
                     return new Film(
@@ -32,13 +31,13 @@ public class FilmWithGenresExtractor implements ResultSetExtractor<List<Film>> {
                 }
             });
 
-            // Установка рейтинга
-            if (rs.getInt("rating_id") != 0) {
-                Rating mpa = new Rating(rs.getInt("rating_id"), rs.getString("rating_name"));
+            // Добавляем MPA (рейтинг)
+            if (rs.getInt("mpa_rating") != 0) {
+                Rating mpa = new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name"));
                 film.setMpa(mpa);
             }
 
-            // Установка жанров
+            // Добавляем жанры
             int genreId = rs.getInt("genre_id");
             if (!rs.wasNull()) {
                 Genre genre = new Genre(genreId, rs.getString("genre_name"));

@@ -202,6 +202,7 @@ public class FilmService {
     }
 
     private void populateFilmData(Film film) {
+        // Заполняем жанры
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             film.setGenres(film.getGenres().stream()
                     .map(genre -> genreService.getGenreById(genre.getId()))
@@ -209,15 +210,16 @@ public class FilmService {
                     .sorted(Comparator.comparing(Genre::getId))
                     .toList());
         } else {
-            film.setGenres(new ArrayList<>());
+            film.setGenres(new ArrayList<>()); // Пустой список вместо null
         }
 
+        // Заполняем MPA (рейтинг)
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             Rating mpa = ratingService.getRatingById(film.getMpa().getId());
             if (mpa != null) {
                 film.setMpa(mpa);
             } else {
-                log.warn("Рейтинг с ID {} не найден для фильма со ID {}", film.getMpa().getId(), film.getId());
+                log.warn("Рейтинг с ID {} не найден для фильма с ID {}", film.getMpa().getId(), film.getId());
                 film.setMpa(null);
             }
         }

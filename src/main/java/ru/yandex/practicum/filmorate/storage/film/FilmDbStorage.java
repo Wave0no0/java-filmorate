@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Optional;
 
 @Repository("filmDbStorage")
 public class FilmDbStorage implements FilmStorage {
+    private static final Logger log = LoggerFactory.getLogger(FilmDbStorage.class);
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -64,9 +67,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
+        // SQL для добавления фильма в таблицу "films"
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
+        // Выполняем вставку данных о фильме и получаем сгенерированный ID
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, film.getName());
@@ -77,7 +82,16 @@ public class FilmDbStorage implements FilmStorage {
             return ps;
         }, keyHolder);
 
-        film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
+        int filmId = Objects.requireNonNull(keyHolder.getKey()).intValue();
+        film.setId(filmId);
+
+        // Сохраняем жанры фильма в таблице "film_genres"
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)", filmId, genre.getId());
+            }
+        }
+
         return film;
     }
 
@@ -90,6 +104,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAllFilms() {
+        log.info("Получение всех фильмов из базы данных");
         String sql = """
         SELECT f.*, r.name AS rating_name, fg.genre_id, g.name AS genre_name
         FROM films f
@@ -98,7 +113,9 @@ public class FilmDbStorage implements FilmStorage {
         LEFT JOIN genres g ON fg.genre_id = g.id
     """;
 
-        return jdbcTemplate.query(sql, new FilmWithGenresExtractor());
+        List<Film> films = jdbcTemplate.query(sql, new FilmWithGenresExtractor());
+        log.info("Получено фильмов: {}", films.size());
+        return films;
     }
 
     @Override
