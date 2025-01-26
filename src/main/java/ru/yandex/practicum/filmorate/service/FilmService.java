@@ -65,6 +65,9 @@ public class FilmService {
     public Film updateFilm(Film film) {
         log.info("Обновление фильма с ID {}", film.getId());
 
+
+        getFilmById(film.getId());
+
         validateReleaseDate(film);
         validateGenresAndRating(film);
 
@@ -84,7 +87,12 @@ public class FilmService {
 
     public void addLike(int filmId, int userId) {
         log.info("Добавление лайка фильму с ID {} от пользователя с ID {}", filmId, userId);
+
+        // Проверка существования фильма и пользователя
         getFilmById(filmId);
+        if (ratingService.getRatingById(userId) == null) {
+            throw new ResourceNotFoundException("Пользователь с ID " + userId + " не найден.");
+        }
         filmStorage.addLike(filmId, userId);
         log.info("Лайк успешно добавлен");
     }
