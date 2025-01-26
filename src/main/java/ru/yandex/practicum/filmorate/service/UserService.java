@@ -1,49 +1,95 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
-
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
-
-    public User createUser(User user) {
-        return userStorage.addUser(user);
-    }
-
-    public User updateUser(User user) {
-        return userStorage.updateUser(user);
-    }
-
-    public Optional<User> getUserById(int id) {
-        return userStorage.getUserById(id);
-    }
 
     public List<User> getAllUsers() {
         return userStorage.getAllUsers();
     }
 
-    public void addFriend(int userId, int friendId) {
-        userStorage.addFriend(userId, friendId); // Метод в хранилище для добавления друга
+    public User getUserById(int id) {
+        return userStorage.getUser(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + id + " not found."));
+    }
+
+    public User createUser(User user) {
+        preSave(user);
+        user.validate();
+        return userStorage.addUser(user);
+    }
+
+    public User updateUser(User user) {
+        user.validate();
+        return userStorage.updateUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + user.getId() + " not found."));
+    }
+
+    public User addFriend(int userId, int friendId) {
+        getUserById(userId);
+        getUserById(friendId);
+        userStorage.addFriend(userId, friendId);
+        return getUserById(userId);
+    }
+
+    public void confirmFriendship(int userId, int friendId) {
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+
+        user.updateFriendStatus(friendId, "подтверждённая");
+        friend.updateFriendStatus(userId, "подтверждённая");
+
+        userStorage.updateUser(user);
+        userStorage.updateUser(friend);
     }
 
     public void removeFriend(int userId, int friendId) {
-        userStorage.removeFriend(userId, friendId); // Метод в хранилище для удаления друга
+        getUserById(userId);
+        getUserById(friendId);
+        userStorage.removeFriend(userId, friendId);
     }
+
+    public List<User> getCommonFriends(int userId, int otherId) {
+        Set<Integer> userFriends = new HashSet<>(userStorage.getFriends(userId)
+                .stream()
+                .map(User::getId)
+                .collect(Collectors.toSet()));
+
+        Set<Integer> otherFriends = new HashSet<>(userStorage.getFriends(otherId)
+                .stream()
+                .map(User::getId)
+                .collect(Collectors.toSet()));
+
+        return userFriends.stream()
+                .filter(otherFriends::contains)
+                .map(this::getUserById)
+                .collect(Collectors.toList());
+    }
+
 
     public List<User> getFriends(int userId) {
-        return userStorage.getFriends(userId); // Метод в хранилище для получения друзей
+        // Проверяем, существует ли пользователь
+        getUserById(userId); // Если пользователь не существует, выбрасывается ResourceNotFoundException
+
+        // Возвращаем друзей
+        return userStorage.getFriends(userId);
     }
 
-    public List<User> getCommonFriends(int userId, int otherUserId) {
-        return userStorage.getCommonFriends(userId, otherUserId); // Метод в хранилище для получения общих друзей
+    private void preSave(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 }
