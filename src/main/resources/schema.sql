@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS films (
     description TEXT,
     release_date DATE NOT NULL,
     duration INT NOT NULL,
-    rating_id INT DEFAULT NULL,
-    CONSTRAINT fk_film_rating FOREIGN KEY (rating_id) REFERENCES ratings (id) ON DELETE SET NULL
+    mpa_rating INT DEFAULT NULL, -- Исправлено: добавлено поле mpa_rating
+    CONSTRAINT fk_film_rating FOREIGN KEY (mpa_rating) REFERENCES ratings (id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS genres (
@@ -62,4 +62,3 @@ ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE films ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE genres ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE ratings ALTER COLUMN id RESTART WITH 1;
-
