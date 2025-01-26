@@ -1,11 +1,15 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmWithGenresExtractor;
 
+import java.sql.PreparedStatement;
 import java.util.List;
+import java.util.Objects;
+
 import java.util.Optional;
 
 @Repository("filmDbStorage")
@@ -19,43 +23,53 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getFilm(int id) {
-        String sql = """
-                SELECT f.*, g.id AS genre_id, g.name AS genre_name
-                FROM films f
-                LEFT JOIN film_genres fg ON f.id = fg.film_id
-                LEFT JOIN genres g ON fg.genre_id = g.id
-                WHERE f.id = ?;
-                """;
-        List<Film> films = jdbcTemplate.query(sql, new FilmWithGenresExtractor(), id);
+        String sql = "SELECT * FROM films WHERE id = ?";
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> new Film(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getString("description"),
+                rs.getDate("release_date").toLocalDate(),
+                rs.getInt("duration")
+        ), id);
         return films.stream().findFirst();
     }
 
     @Override
     public Film addFilm(Film film) {
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating) VALUES (?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(), film.getDuration(),
-                film.getMpa() != null ? film.getMpa().getId() : null);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+            ps.setString(1, film.getName());
+            ps.setString(2, film.getDescription());
+            ps.setDate(3, java.sql.Date.valueOf(film.getReleaseDate()));
+            ps.setInt(4, film.getDuration());
+            ps.setObject(5, film.getMpa() != null ? film.getMpa().getId() : null);
+            return ps;
+        }, keyHolder);
+
+        film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
         return film;
     }
 
     @Override
     public Optional<Film> updateFilm(Film film) {
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_rating = ? WHERE id = ?";
-        int rowsAffected = jdbcTemplate.update(sql, film.getName(), film.getDescription(),
-                film.getReleaseDate(), film.getDuration(),
-                film.getMpa() != null ? film.getMpa().getId() : null, film.getId());
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ? WHERE id = ?";
+        int rowsAffected = jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(), film.getDuration(), film.getId());
         return rowsAffected > 0 ? getFilm(film.getId()) : Optional.empty();
     }
 
     @Override
     public List<Film> getAllFilms() {
-        String sql = """
-                SELECT f.*, g.id AS genre_id, g.name AS genre_name
-                FROM films f
-                LEFT JOIN film_genres fg ON f.id = fg.film_id
-                LEFT JOIN genres g ON fg.genre_id = g.id;
-                """;
-        return jdbcTemplate.query(sql, new FilmWithGenresExtractor());
+        String sql = "SELECT * FROM films";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Film(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getString("description"),
+                rs.getDate("release_date").toLocalDate(),
+                rs.getInt("duration")
+        ));
     }
 
     @Override
@@ -76,12 +90,16 @@ public class FilmDbStorage implements FilmStorage {
                 SELECT f.*, COUNT(l.user_id) AS likes_count
                 FROM films f
                 LEFT JOIN likes l ON f.id = l.film_id
-                LEFT JOIN film_genres fg ON f.id = fg.film_id
-                LEFT JOIN genres g ON fg.genre_id = g.id
                 GROUP BY f.id
                 ORDER BY likes_count DESC
-                LIMIT ?;
+                LIMIT ?
                 """;
-        return jdbcTemplate.query(sql, new FilmWithGenresExtractor(), count);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Film(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getString("description"),
+                rs.getDate("release_date").toLocalDate(),
+                rs.getInt("duration")
+        ), count);
     }
 }
