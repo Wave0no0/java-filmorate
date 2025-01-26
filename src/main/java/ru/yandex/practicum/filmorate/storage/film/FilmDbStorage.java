@@ -37,43 +37,41 @@ public class FilmDbStorage implements FilmStorage {
         WHERE f.id = ?
     """;
 
-        return jdbcTemplate.query(sql, rs -> {
-            Film film = null;
+        // Используем ResultSetExtractor для сборки фильма с жанрами и рейтингом
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = new Film(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getString("description"),
+                    rs.getDate("release_date").toLocalDate(),
+                    rs.getInt("duration")
+            );
 
-            while (rs.next()) {
-                if (film == null) {
-                    film = new Film(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getString("description"),
-                            rs.getDate("release_date").toLocalDate(),
-                            rs.getInt("duration")
-                    );
-
-                    if (rs.getInt("mpa_rating") != 0) {
-                        film.setMpa(new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name")));
-                    }
-                }
-
-                // Добавляем жанры
-                int genreId = rs.getInt("genre_id");
-                if (!rs.wasNull()) {
-                    Genre genre = new Genre(genreId, rs.getString("genre_name"));
-                    if (!film.getGenres().contains(genre)) {
-                        film.getGenres().add(genre);
-                    }
-                }
+            // Устанавливаем рейтинг MPA
+            if (rs.getInt("mpa_rating") != 0) {
+                film.setMpa(new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name")));
             }
 
-            return Optional.ofNullable(film);
+            // Добавляем жанры
+            int genreId = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                Genre genre = new Genre(genreId, rs.getString("genre_name"));
+                film.getGenres().add(genre);
+            }
+
+            return film;
         }, id);
+
+        return films.stream().findFirst();
     }
 
     @Override
     public Film addFilm(Film film) {
+        // SQL для добавления фильма в таблицу "films"
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
+        // Выполняем вставку данных о фильме и получаем сгенерированный ID
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, film.getName());
@@ -87,12 +85,10 @@ public class FilmDbStorage implements FilmStorage {
         int filmId = Objects.requireNonNull(keyHolder.getKey()).intValue();
         film.setId(filmId);
 
-        // Удаляем дубли перед сохранением жанров
+        // Сохраняем жанры фильма в таблице "film_genres"
         if (film.getGenres() != null) {
-            film.setGenres(film.getGenres().stream().distinct().toList());
             for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
-                        filmId, genre.getId());
+                jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)", filmId, genre.getId());
             }
         }
 
