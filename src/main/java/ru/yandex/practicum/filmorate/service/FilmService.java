@@ -8,10 +8,10 @@ import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Rating;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -32,7 +32,9 @@ public class FilmService {
 
     public List<Film> getAllFilms() {
         log.info("Получение всех фильмов");
-        return filmStorage.getAllFilms();
+        List<Film> films = filmStorage.getAllFilms();
+        films.forEach(this::populateFilmData); // Добавляем названия жанров и рейтингов
+        return films;
     }
 
     public Film getFilmById(int id) {
@@ -43,10 +45,7 @@ public class FilmService {
                     return new ResourceNotFoundException("Фильм с ID " + id + " не найден.");
                 });
 
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            film.getGenres().sort(Comparator.comparing(Genre::getId));
-        }
-
+        populateFilmData(film); // Добавляем названия жанров и рейтингов
         log.info("Фильм с ID {} успешно получен", id);
         return film;
     }
@@ -58,13 +57,13 @@ public class FilmService {
         validateGenresAndRating(film);
 
         Film createdFilm = filmStorage.addFilm(film);
+        populateFilmData(createdFilm); // Добавляем названия жанров и рейтингов
         log.info("Фильм успешно создан: {}", createdFilm);
         return createdFilm;
     }
 
     public Film updateFilm(Film film) {
         log.info("Обновление фильма с ID {}", film.getId());
-
 
         getFilmById(film.getId());
 
@@ -77,10 +76,7 @@ public class FilmService {
                     return new ResourceNotFoundException("Фильм с ID " + film.getId() + " не найден.");
                 });
 
-        if (updatedFilm.getGenres() != null && !updatedFilm.getGenres().isEmpty()) {
-            updatedFilm.getGenres().sort(Comparator.comparing(Genre::getId));
-        }
-
+        populateFilmData(updatedFilm); // Добавляем названия жанров и рейтингов
         log.info("Фильм успешно обновлен: {}", updatedFilm);
         return updatedFilm;
     }
@@ -90,9 +86,6 @@ public class FilmService {
 
         // Проверка существования фильма и пользователя
         getFilmById(filmId);
-        if (ratingService.getRatingById(userId) == null) {
-            throw new ResourceNotFoundException("Пользователь с ID " + userId + " не найден.");
-        }
         filmStorage.addLike(filmId, userId);
         log.info("Лайк успешно добавлен");
     }
@@ -106,7 +99,9 @@ public class FilmService {
 
     public List<Film> getPopularFilms(int count) {
         log.info("Получение {} популярных фильмов", count);
-        return filmStorage.getPopularFilms(count);
+        List<Film> films = filmStorage.getPopularFilms(count);
+        films.forEach(this::populateFilmData); // Добавляем названия жанров и рейтингов
+        return films;
     }
 
     private void validateReleaseDate(Film film) {
@@ -118,25 +113,37 @@ public class FilmService {
 
     private void validateGenresAndRating(Film film) {
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            film.setGenres(new ArrayList<>(film.getGenres().stream()
+            film.setGenres(film.getGenres().stream()
                     .distinct()
-                    .toList()));
-
-            film.getGenres().forEach(genre -> {
-                if (genre.getId() == null) {
-                    throw new BadRequestException("Жанр не содержит ID.");
-                }
-                Genre retrievedGenre = genreService.getGenreById(genre.getId());
-                if (retrievedGenre == null) {
-                    throw new BadRequestException("Жанр с ID " + genre.getId() + " не найден.");
-                }
-            });
+                    .map(genre -> {
+                        Genre retrievedGenre = genreService.getGenreById(genre.getId());
+                        if (retrievedGenre == null) {
+                            throw new BadRequestException("Жанр с ID " + genre.getId() + " не найден.");
+                        }
+                        return retrievedGenre;
+                    })
+                    .toList());
         }
 
         if (film.getMpa() != null && film.getMpa().getId() != null) {
-            if (ratingService.getRatingById(film.getMpa().getId()) == null) {
+            Rating rating = ratingService.getRatingById(film.getMpa().getId());
+            if (rating == null) {
                 throw new BadRequestException("Рейтинг с ID " + film.getMpa().getId() + " не найден.");
             }
+            film.setMpa(rating);
+        }
+    }
+
+    private void populateFilmData(Film film) {
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            film.setGenres(film.getGenres().stream()
+                    .map(genre -> genreService.getGenreById(genre.getId()))
+                    .sorted(Comparator.comparing(Genre::getId))
+                    .toList());
+        }
+
+        if (film.getMpa() != null && film.getMpa().getId() != null) {
+            film.setMpa(ratingService.getRatingById(film.getMpa().getId()));
         }
     }
 }

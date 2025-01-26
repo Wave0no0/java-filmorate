@@ -1,9 +1,12 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
@@ -36,7 +39,15 @@ public class FilmController {
     @ResponseStatus(HttpStatus.CREATED)
     public Film createFilm(@Valid @RequestBody Film film) {
         log.info("Создание фильма: {}", film);
-        return filmService.createFilm(film);
+        try {
+            return filmService.createFilm(film);
+        } catch (BadRequestException e) {
+            log.warn("Ошибка создания фильма: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (ResourceNotFoundException e) {
+            log.warn("Ресурс не найден при создании фильма: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
     }
 
     @PutMapping

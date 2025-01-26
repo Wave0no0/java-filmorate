@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS films (
     description TEXT,
     release_date DATE NOT NULL,
     duration INT NOT NULL,
-    mpa_rating INT DEFAULT NULL, -- Исправлено: добавлено поле mpa_rating
+    mpa_rating INT DEFAULT NULL,
     CONSTRAINT fk_film_rating FOREIGN KEY (mpa_rating) REFERENCES ratings (id) ON DELETE SET NULL
 );
 
@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS film_genres (
     genre_id INT NOT NULL,
     PRIMARY KEY (film_id, genre_id),
     FOREIGN KEY (film_id) REFERENCES films (id) ON DELETE CASCADE,
-    FOREIGN KEY (genre_id) REFERENCES genres (id) ON DELETE CASCADE
+    FOREIGN KEY (genre_id) REFERENCES genres (id) ON DELETE CASCADE,
+    CONSTRAINT unique_film_genre UNIQUE (film_id, genre_id) -- Уникальное ограничение
 );
 
 CREATE TABLE IF NOT EXISTS likes (
