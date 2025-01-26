@@ -32,21 +32,55 @@ public class FilmService {
 
     public List<Film> getAllFilms() {
         log.info("Получение всех фильмов");
+
         List<Film> films = filmStorage.getAllFilms();
-        films.forEach(this::populateFilmData); // Добавляем названия жанров и рейтингов
+
+        // Заполняем данные о MPA и жанрах для каждого фильма
+        films.forEach(film -> {
+            if (film.getMpa() != null && film.getMpa().getId() != null) {
+                Rating mpa = ratingService.getRatingById(film.getMpa().getId());
+                film.setMpa(mpa);
+            }
+
+            if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+                List<Genre> genres = film.getGenres().stream()
+                        .map(genre -> genreService.getGenreById(genre.getId()))
+                        .sorted(Comparator.comparing(Genre::getId)) // Сортируем по ID жанров
+                        .toList();
+                film.setGenres(genres);
+            }
+        });
+
+        log.info("Получено фильмов: {}", films.size());
         return films;
     }
 
     public Film getFilmById(int id) {
         log.info("Получение фильма с ID {}", id);
+
+        // Получаем фильм из хранилища
         Film film = filmStorage.getFilm(id)
                 .orElseThrow(() -> {
                     log.warn("Фильм с ID {} не найден", id);
                     return new ResourceNotFoundException("Фильм с ID " + id + " не найден.");
                 });
 
-        populateFilmData(film); // Добавляем названия жанров и рейтингов
-        log.info("Фильм с ID {} успешно получен", id);
+        // Заполняем данные о MPA (рейтинге)
+        if (film.getMpa() != null && film.getMpa().getId() != null) {
+            Rating mpa = ratingService.getRatingById(film.getMpa().getId());
+            film.setMpa(mpa);
+        }
+
+        // Заполняем данные о жанрах
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            List<Genre> genres = film.getGenres().stream()
+                    .map(genre -> genreService.getGenreById(genre.getId()))
+                    .sorted(Comparator.comparing(Genre::getId)) // Сортируем по ID жанров
+                    .toList();
+            film.setGenres(genres);
+        }
+
+        log.info("Фильм с ID {} успешно получен: {}", id, film);
         return film;
     }
 
