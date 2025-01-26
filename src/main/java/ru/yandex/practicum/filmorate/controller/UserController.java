@@ -1,80 +1,90 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.exception.ResourceNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/users")
-@RequiredArgsConstructor
 public class UserController {
-    private static final Logger log = LoggerFactory.getLogger(UserController.class); // Логгер
     private final UserService userService;
 
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable int id) {
-        if (id <= 0) { // Проверка корректности ID
-            throw new ResourceNotFoundException("User ID must be greater than 0.");
+    public User getUserById(@PathVariable int id) {
+        try {
+            return userService.getUserById(id);
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден", e);
         }
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+    @ResponseStatus(HttpStatus.CREATED)
+    public User createUser(@Valid @RequestBody User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+        return userService.createUser(user);
     }
 
     @PutMapping
-    public ResponseEntity<User> updateUser(@RequestBody User user) {
-        User updatedUser = userService.updateUser(user);
-        return ResponseEntity.ok(updatedUser);
+    public User updateUser(@Valid @RequestBody User user) {
+        return userService.updateUser(user);
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Map<String, String>> addFriend(@PathVariable int id, @PathVariable int friendId) {
+    public void addFriend(@PathVariable int id, @PathVariable int friendId) {
         userService.addFriend(id, friendId);
-        return ResponseEntity.ok(Map.of("message", "Friend added successfully"));
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Map<String, String>> removeFriend(@PathVariable int id, @PathVariable int friendId) {
+    public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
         userService.removeFriend(id, friendId);
-        return ResponseEntity.ok(Map.of("message", "Friend removed successfully"));
     }
 
     @GetMapping("/{id}/friends")
-    public ResponseEntity<List<User>> getFriends(@PathVariable int id) {
-        log.info("Fetching friends for user with ID: {}", id);
-
-        // Проверяем, существует ли пользователь с указанным ID
-        User user = userService.getUserById(id); // Выбрасывает ResourceNotFoundException, если пользователь отсутствует
-        log.info("User found: {}", user);
-
-        // Получаем список друзей
-        List<User> friends = userService.getFriends(id);
-        log.info("Friends found: {}", friends);
-
-        return ResponseEntity.ok(friends);
+    public Set<User> getFriends(@PathVariable int id) {
+        return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public ResponseEntity<List<User>> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
-        return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
+    public List<SimpleUser> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+        Set<User> commonFriends = userService.getCommonFriends(id, otherId);
+        return commonFriends.stream()
+                .map(user -> new SimpleUser(user.getId(), user.getName() != null ? user.getName() : user.getLogin()))
+                .toList();
+    }
+
+    public static class SimpleUser {
+        private final int id;
+        private final String name;
+
+        public SimpleUser(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
