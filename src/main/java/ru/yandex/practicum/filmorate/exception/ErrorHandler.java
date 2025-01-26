@@ -86,6 +86,7 @@ public class ErrorHandler {
                 "message", "ID must be a positive integer"
         );
     }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
