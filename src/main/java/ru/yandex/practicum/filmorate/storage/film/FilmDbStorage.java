@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import ru.yandex.practicum.filmorate.model.Rating;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.model.Film;
 
 import java.sql.PreparedStatement;
 import java.util.List;
@@ -23,14 +25,40 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getFilm(int id) {
-        String sql = "SELECT * FROM films WHERE id = ?";
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> new Film(
-                rs.getInt("id"),
-                rs.getString("name"),
-                rs.getString("description"),
-                rs.getDate("release_date").toLocalDate(),
-                rs.getInt("duration")
-        ), id);
+        String sql = """
+        SELECT f.*, r.name AS rating_name, fg.genre_id, g.name AS genre_name
+        FROM films f
+        LEFT JOIN ratings r ON f.mpa_rating = r.id
+        LEFT JOIN film_genres fg ON f.id = fg.film_id
+        LEFT JOIN genres g ON fg.genre_id = g.id
+        WHERE f.id = ?
+    """;
+
+        // Используем ResultSetExtractor для сборки фильма с жанрами и рейтингом
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = new Film(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getString("description"),
+                    rs.getDate("release_date").toLocalDate(),
+                    rs.getInt("duration")
+            );
+
+            // Устанавливаем рейтинг MPA
+            if (rs.getInt("mpa_rating") != 0) {
+                film.setMpa(new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name")));
+            }
+
+            // Добавляем жанры
+            int genreId = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                Genre genre = new Genre(genreId, rs.getString("genre_name"));
+                film.getGenres().add(genre);
+            }
+
+            return film;
+        }, id);
+
         return films.stream().findFirst();
     }
 
@@ -62,14 +90,15 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAllFilms() {
-        String sql = "SELECT * FROM films";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Film(
-                rs.getInt("id"),
-                rs.getString("name"),
-                rs.getString("description"),
-                rs.getDate("release_date").toLocalDate(),
-                rs.getInt("duration")
-        ));
+        String sql = """
+        SELECT f.*, r.name AS rating_name, fg.genre_id, g.name AS genre_name
+        FROM films f
+        LEFT JOIN ratings r ON f.mpa_rating = r.id
+        LEFT JOIN film_genres fg ON f.id = fg.film_id
+        LEFT JOIN genres g ON fg.genre_id = g.id
+    """;
+
+        return jdbcTemplate.query(sql, new FilmWithGenresExtractor());
     }
 
     @Override
