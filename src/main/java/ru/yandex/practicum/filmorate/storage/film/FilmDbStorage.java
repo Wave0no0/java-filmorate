@@ -28,41 +28,55 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getFilm(int id) {
-        String sql = """
-        SELECT f.*, r.name AS rating_name, fg.genre_id, g.name AS genre_name
+        // SQL-запрос для получения фильма
+        String sqlFilm = """
+        SELECT f.*, r.name AS rating_name
         FROM films f
         LEFT JOIN ratings r ON f.mpa_rating = r.id
-        LEFT JOIN film_genres fg ON f.id = fg.film_id
-        LEFT JOIN genres g ON fg.genre_id = g.id
         WHERE f.id = ?
     """;
 
-        // Используем ResultSetExtractor для сборки фильма с жанрами и рейтингом
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Film film = new Film(
-                    rs.getInt("id"),
-                    rs.getString("name"),
-                    rs.getString("description"),
-                    rs.getDate("release_date").toLocalDate(),
-                    rs.getInt("duration")
-            );
+        // Извлекаем основную информацию о фильме
+        Film film = jdbcTemplate.query(sqlFilm, rs -> {
+            if (rs.next()) {
+                // Используем доступный конструктор без списка жанров
+                Film f = new Film(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getDate("release_date").toLocalDate(),
+                        rs.getInt("duration")
+                );
 
-            // Устанавливаем рейтинг MPA
-            if (rs.getInt("mpa_rating") != 0) {
-                film.setMpa(new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name")));
+                // Устанавливаем рейтинг (MPA), если он есть
+                if (rs.getInt("mpa_rating") != 0) {
+                    f.setMpa(new Rating(rs.getInt("mpa_rating"), rs.getString("rating_name")));
+                }
+                return f;
             }
-
-            // Добавляем жанры
-            int genreId = rs.getInt("genre_id");
-            if (!rs.wasNull()) {
-                Genre genre = new Genre(genreId, rs.getString("genre_name"));
-                film.getGenres().add(genre);
-            }
-
-            return film;
+            return null;
         }, id);
 
-        return films.stream().findFirst();
+        if (film == null) {
+            return Optional.empty();
+        }
+
+        // SQL-запрос для получения жанров фильма
+        String sqlGenres = """
+        SELECT g.id, g.name
+        FROM film_genres fg
+        JOIN genres g ON fg.genre_id = g.id
+        WHERE fg.film_id = ?
+    """;
+
+        // Извлекаем жанры и добавляем их в фильм
+        List<Genre> genres = jdbcTemplate.query(sqlGenres, (rs, rowNum) ->
+                new Genre(rs.getInt("id"), rs.getString("name")), id);
+
+        film.setGenres(genres);
+
+        // Возвращаем фильм
+        return Optional.of(film);
     }
 
     @Override
