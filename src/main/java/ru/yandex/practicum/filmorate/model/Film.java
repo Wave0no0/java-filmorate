@@ -4,52 +4,46 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class Film {
     private int id;
 
-    @NotBlank(message = "Film name cannot be blank.")
+    @NotBlank(message = "Название фильма не может быть пустым.")
     private String name;
 
-    @Size(max = 200, message = "Description cannot exceed 200 characters.")
+    @Size(max = 200, message = "Описание не может быть длиннее 200 символов.")
     private String description;
 
-    @NotNull(message = "Release date cannot be null.")
-    @Past(message = "Release date must be in the past.")
+    @NotNull(message = "Дата релиза не может быть пустой.")
+    @PastOrPresent(message = "Дата релиза должна быть в прошлом или настоящем.")
     private LocalDate releaseDate;
 
-    @Positive(message = "Duration must be positive.")
+    @Positive(message = "Продолжительность фильма должна быть положительным числом.")
     private int duration;
 
-    private final Set<Integer> likes = new HashSet<>();
+    @NotNull(message = "MPA рейтинг обязателен для указания.")
+    private Rating mpa;
 
-    public void validate() {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Film name cannot be blank.");
-        }
-        if (description != null && description.length() > 200) {
-            throw new IllegalArgumentException("Description cannot exceed 200 characters.");
-        }
-        if (releaseDate == null || releaseDate.isBefore(LocalDate.of(1895, 12, 28))) {
-            throw new IllegalArgumentException("Release date must be after December 28, 1895.");
-        }
-        if (duration <= 0) {
-            throw new IllegalArgumentException("Duration must be positive.");
-        }
+    private List<Genre> genres = new ArrayList<>();
+
+    // Конструктор без параметров
+    public Film() {
     }
 
-    public void addLike(int userId) {
-        likes.add(userId);
+    // Конструктор с параметрами
+    public Film(Integer id, String name, String description, LocalDate releaseDate, int duration) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.releaseDate = releaseDate;
+        this.duration = duration;
+        this.genres = new ArrayList<>(); // Инициализация пустого списка жанров
     }
 
-    public void removeLike(int userId) {
-        likes.remove(userId);
-    }
-
-    public int getLikeCount() {
-        return likes.size();
+    public void setGenres(List<Genre> genres) {
+        this.genres = genres != null ? genres : new ArrayList<>();
     }
 }
